@@ -395,6 +395,11 @@ integrity_watch:
           "minItems": 1,
           "items": {"$ref": "#/$defs/integrityWatch"}
         },
+        "argument_guards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/argumentGuard"}
+        },
         "approval": {
           "type": "object",
           "additionalProperties": false,
