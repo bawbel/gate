@@ -1,0 +1,38 @@
+{
+  "schema": "bawbel/ave-mitigations/v1",
+  "mitigations": {
+    "AVE-2026-00041": {
+      "review_status": "reviewed",
+      "reviewed_by": "chaksaray",
+      "reviewed_at": "2026-07-06T00:00:00Z",
+      "rule_ids": [
+        "bawbel-gate/github-mcp-exfil/AVE-2026-00041/1",
+        "bawbel-gate/github-mcp-exfil/AVE-2026-00041/2"
+      ],
+      "manifest_stanza": {
+        "integrity_watch": [
+          {"kind": "tool_schema", "on_drift": "suspend"}
+        ],
+        "taint_rules": [
+          {
+            "when": {"tainted_by_any": ["tool.response.*"]},
+            "then": [{"tools_with": "external_comms", "effect": "approve"}]
+          }
+        ]
+      }
+    },
+    "AVE-2026-00042": {
+      "review_status": "reviewed",
+      "reviewed_by": "chaksaray",
+      "reviewed_at": "2026-07-06T00:00:00Z",
+      "rule_ids": [
+        "bawbel-gate/tool-schema-drift/AVE-2026-00042/1"
+      ],
+      "manifest_stanza": {
+        "integrity_watch": [
+          {"kind": "tool_schema", "on_drift": "suspend"}
+        ]
+      }
+    }
+  }
+}

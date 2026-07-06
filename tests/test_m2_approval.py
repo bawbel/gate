@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
 from click.testing import CliRunner
 
@@ -13,7 +12,7 @@ from bawbel_gate.policy.approval import (
     _format_prompt,
     _REDACTED,
 )
-from bawbel_gate._const import REASON_APPROVAL_DENIED, REASON_APPROVAL_TIMEOUT
+from bawbel_gate._const import REASON_APPROVAL_DENIED
 from bawbel_gate.audit.writer import verify_chain, AuditWriter
 
 

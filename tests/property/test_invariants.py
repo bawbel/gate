@@ -7,19 +7,19 @@ make them pass.
 
 from __future__ import annotations
 
-from hypothesis import given, assume, settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
 # Strategies
 # ---------------------------------------------------------------------------
 
-effects        = st.sampled_from(["allow", "approve", "deny"])
-prov_classes   = st.sampled_from([
+effects = st.sampled_from(["allow", "approve", "deny"])
+prov_classes = st.sampled_from([
     "tool.response.github", "tool.response.fs", "web.fetched",
     "tool.response.slack", "model.generated",
 ])
-tool_names     = st.text(min_size=1, max_size=32, alphabet=st.characters(
+tool_names = st.text(min_size=1, max_size=32, alphabet=st.characters(
     whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_"
 ))
 
@@ -78,7 +78,6 @@ class TestDefaultDeny:
         from bawbel_gate.policy.engine import resolve
         from bawbel_gate.policy.manifest import Manifest, ToolGrant
         from bawbel_gate.mux.session import SessionState
-        from bawbel_gate._types import Effect
 
         manifest = Manifest(
             server="github",
@@ -95,7 +94,7 @@ class TestDefaultDeny:
     def test_unmatched_tool_always_deny(self, tool):
         """I1: any call with no matching grant resolves to deny."""
         from bawbel_gate.policy.engine import resolve
-        from bawbel_gate.policy.manifest import Manifest, ToolGrant
+        from bawbel_gate.policy.manifest import Manifest
         from bawbel_gate.mux.session import SessionState
 
         # Empty grants (no wildcard) — default deny
@@ -175,7 +174,7 @@ class TestMonotonicity:
         session_extra = session_base.with_taint(extra)
 
         before = resolve("create_pull_request", {}, manifest, session_base).effect
-        after  = resolve("create_pull_request", {}, manifest, session_extra).effect
+        after = resolve("create_pull_request", {}, manifest, session_extra).effect
         assert PERMISSIVENESS[after] <= PERMISSIVENESS[before]
 
 
@@ -211,7 +210,9 @@ class TestTrifectaInvariant:
         private_touched=st.booleans(),
         untrusted_seen=st.booleans(),
     )
-    def test_trifecta_never_allow_when_complete(self, grant_effect, private_touched, untrusted_seen):
+    def test_trifecta_never_allow_when_complete(
+        self, grant_effect, private_touched, untrusted_seen
+    ):
         """I4: for any manifest with external_comms, complete trifecta -> never allow."""
         from bawbel_gate.policy.engine import resolve
         from bawbel_gate.policy.manifest import Manifest, ToolGrant

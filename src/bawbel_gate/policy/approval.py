@@ -20,7 +20,7 @@ from bawbel_gate.audit.canonical import canonical_str
 from bawbel_gate.policy.manifest import _secret_scan
 
 _GRANT_RESPONSES = frozenset({"y", "yes"})
-_DENY_RESPONSES  = frozenset({"n", "no"})
+_DENY_RESPONSES = frozenset({"n", "no"})
 
 _REDACTED = "<redacted:secret>"
 

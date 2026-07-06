@@ -1,6 +1,5 @@
 """Unit tests for M2 policy engine, manifest loader, and argument guards."""
 
-import json
 from pathlib import Path
 
 from bawbel_gate.policy.engine import resolve, lattice_min, Decision
@@ -29,8 +28,12 @@ def _simple_manifest(
         server="github",
         provenance_class="tool.response.github",
         instruction_authority="none",
-        trifecta=trifecta or {"private_data": True, "untrusted_content": True, "external_comms": True},
-        grants=tool_grants if tool_grants is not None else [ToolGrant(name="*", effect=EFFECT_DENY)],
+        trifecta=trifecta or {
+            "private_data": True, "untrusted_content": True, "external_comms": True
+        },
+        grants=(
+            tool_grants if tool_grants is not None else [ToolGrant(name="*", effect=EFFECT_DENY)]
+        ),
         taint_rules=taint_rules if taint_rules is not None else [],
         argument_guards=guards if guards is not None else [],
     )
@@ -159,7 +162,9 @@ class TestArgumentGuards:
     def test_guard_byte_cap_deny(self):
         manifest = _simple_manifest(
             tool_grants=[ToolGrant(name="write_file", effect=EFFECT_ALLOW)],
-            guards=[ArgumentGuard(applies_to="*", outbound_secret_scan=False, max_outbound_bytes=10)],
+            guards=[ArgumentGuard(
+                applies_to="*", outbound_secret_scan=False, max_outbound_bytes=10
+            )],
         )
         d = resolve("write_file", {"content": "x" * 100}, manifest, SessionState())
         assert d.effect == EFFECT_DENY
@@ -330,7 +335,8 @@ class TestManifestLoader:
             "subject:\n  kind: mcp-server\n  name: test\n"
             "provenance_class: tool.response.test\n"
             "instruction_authority: none\n"
-            "trifecta:\n  private_data: false\n  untrusted_content: false\n  external_comms: false\n"
+            "trifecta:\n  private_data: false\n"
+            "  untrusted_content: false\n  external_comms: false\n"
             "grants:\n"
             "  tools:\n"
             "    - name: dup_tool\n      effect: allow\n"

@@ -214,15 +214,112 @@ def lint(
 
 
 # ---------------------------------------------------------------------------
-# harden (stub — implemented in M3)
+# verify — tool schema pinning check and re-pin
+# ---------------------------------------------------------------------------
+
+@main.command("verify")
+@click.argument("tools_json", type=click.Path(exists=True, path_type=Path))
+@click.argument("manifest_file", type=click.Path(exists=True, path_type=Path))
+@click.option("--accept", is_flag=True, default=False,
+              help="Accept the current schema and update the pin in the manifest.")
+def verify(tools_json: Path, manifest_file: Path, accept: bool) -> None:
+    """Check or update the tool schema pin in a manifest. See DESIGN.md 8.1.
+
+    TOOLS_JSON is a JSON file containing the tools/list response body (list of tool objects).
+    MANIFEST_FILE is the capability manifest YAML to check or update.
+    """
+    import json as _json
+    import yaml as _yaml
+    from bawbel_gate.integrity.pinning import pin_tool_schema, detect_drift
+
+    tools = _json.loads(tools_json.read_text(encoding="utf-8"))
+    if not isinstance(tools, list):
+        click.echo("bawbel-gate: tools JSON must be a list of tool objects", err=True)
+        sys.exit(1)
+
+    manifest_raw = _yaml.safe_load(manifest_file.read_text(encoding="utf-8"))
+    stored_pin = manifest_raw.get("tool_schema_integrity")
+    current_pin = pin_tool_schema(tools)
+
+    if stored_pin is None:
+        click.echo(f"no pin stored in {manifest_file.name}")
+        if accept:
+            manifest_raw["tool_schema_integrity"] = current_pin
+            manifest_file.write_text(
+                _yaml.dump(manifest_raw, default_flow_style=False, sort_keys=False),
+                encoding="utf-8",
+            )
+            click.echo(f"pinned: {current_pin}")
+        else:
+            click.echo(f"current hash: {current_pin}")
+            click.echo("run with --accept to pin this schema")
+        return
+
+    result = detect_drift(tools, stored_pin)
+    if not result.drifted:
+        click.echo(f"ok: no drift — {manifest_file.name} pin matches current tools/list")
+        click.echo(f"  pin: {stored_pin}")
+        return
+
+    click.echo(f"DRIFT DETECTED in {manifest_file.name}", err=True)
+    click.echo(f"  stored:  {stored_pin}", err=True)
+    click.echo(f"  current: {current_pin}", err=True)
+    if accept:
+        manifest_raw["tool_schema_integrity"] = current_pin
+        manifest_file.write_text(
+            _yaml.dump(manifest_raw, default_flow_style=False, sort_keys=False),
+            encoding="utf-8",
+        )
+        click.echo(f"accepted: pin updated to {current_pin}")
+    else:
+        click.echo("run with --accept to update the pin after reviewing the diff", err=True)
+        sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# harden — merge AVE mitigation stanza into a manifest
 # ---------------------------------------------------------------------------
 
 @main.command("harden")
 @click.option("--ave", "ave_id", required=True, help="AVE ID to harden against.")
-@click.option("--manifest", default=None, type=click.Path(path_type=Path),
-              help="Target manifest file to merge into.")
+@click.option(
+    "--manifest", default=None, type=click.Path(path_type=Path),
+    help="Target manifest file to merge into.",
+)
 @click.option("--allow-unreviewed", is_flag=True, default=False,
               help="Proceed even if the stanza review_status is not 'reviewed'.")
-def harden(ave_id: str, manifest: Path | None, allow_unreviewed: bool) -> None:
-    """Merge an AVE mitigation stanza into a capability manifest. Implemented in M3."""
-    click.echo(f"bawbel-gate: harden --ave {ave_id} (implemented in M3)")
+@click.option(
+    "--mitigations",
+    default="mitigations/ave-mitigations.json",
+    type=click.Path(path_type=Path),
+    help="Path to ave-mitigations.json.",
+    show_default=True,
+)
+@click.option("--write", is_flag=True, default=False,
+              help="Write the merged manifest back to --manifest.")
+def harden(
+    ave_id: str, manifest: Path | None, allow_unreviewed: bool,
+    mitigations: Path, write: bool,
+) -> None:
+    """Merge an AVE mitigation stanza into a capability manifest. See DESIGN.md 11.5."""
+    from bawbel_gate.integrity.harden import apply_harden, HardenError
+
+    try:
+        result = apply_harden(
+            ave_id=ave_id,
+            manifest_path=manifest,
+            mitigations_path=mitigations,
+            allow_unreviewed=allow_unreviewed,
+            write=write,
+        )
+    except HardenError as exc:
+        click.echo(f"bawbel-gate: harden error: {exc}", err=True)
+        sys.exit(1)
+
+    click.echo(f"AVE: {result.ave_id}  review_status: {result.review_status}")
+    if result.diff:
+        click.echo(result.diff)
+    if result.applied:
+        click.echo(f"written: {result.manifest_path}")
+    elif manifest is not None:
+        click.echo("dry-run: pass --write to apply the merge")

@@ -15,13 +15,6 @@ from typing import Any
 import jsonschema
 import yaml
 
-from bawbel_gate._const import (
-    EFFECT_DENY,
-    SCHEMA_CAPABILITY_MANIFEST_V1,
-    TRIFECTA_EXTERNAL_COMMS,
-    TRIFECTA_PRIVATE_DATA,
-    TRIFECTA_UNTRUSTED_CONTENT,
-)
 from bawbel_gate._schemas import schema_capability_manifest
 from bawbel_gate._types import Effect
 
@@ -30,10 +23,10 @@ from bawbel_gate._types import Effect
 class Condition:
     """A single predicate on one argument path (dotted notation)."""
     arg_path: str
-    pattern: str | None    = None
-    equals: Any            = None
-    one_of: list | None    = None
-    max_bytes: int | None  = None
+    pattern: str | None = None
+    equals: Any = None
+    one_of: list | None = None
+    max_bytes: int | None = None
 
     def matches(self, args: dict[str, Any]) -> bool:
         value = _dotpath_get(args, self.arg_path)
@@ -67,12 +60,14 @@ class TaintRule:
     tainted_by_all: list[str] = field(default_factory=list)
 
     def matches_session(self, tainted_by: set[str]) -> bool:
-        if self.tainted_by_any:
-            if not any(_class_matches(t, tainted_by) for t in self.tainted_by_any):
-                return False
-        if self.tainted_by_all:
-            if not all(_class_matches(t, tainted_by) for t in self.tainted_by_all):
-                return False
+        if self.tainted_by_any and not any(
+            _class_matches(t, tainted_by) for t in self.tainted_by_any
+        ):
+            return False
+        if self.tainted_by_all and not all(
+            _class_matches(t, tainted_by) for t in self.tainted_by_all
+        ):
+            return False
         return True
 
     def effect_for(self, tool: str, trifecta: dict[str, bool]) -> Effect | None:
@@ -105,9 +100,9 @@ class ArgumentGuard:
 class IntegrityWatch:
     kind: str
     on_drift: str
-    url_pattern: str | None  = None
-    snapshot_at: str | None  = None
-    diff: str | None         = None
+    url_pattern: str | None = None
+    snapshot_at: str | None = None
+    diff: str | None = None
 
 
 @dataclass(frozen=True)
@@ -117,10 +112,10 @@ class Manifest:
     instruction_authority: str
     trifecta: dict[str, bool]
     grants: list[ToolGrant]
-    taint_rules: list[TaintRule]  = field(default_factory=list)
+    taint_rules: list[TaintRule] = field(default_factory=list)
     argument_guards: list[ArgumentGuard] = field(default_factory=list)
     integrity_watch: list[IntegrityWatch] = field(default_factory=list)
-    manifest_sha256: str | None  = None
+    manifest_sha256: str | None = None
 
     def match_grant(self, tool: str) -> ToolGrant | None:
         """Exact name match beats wildcard; two exact matches = validation error."""
@@ -160,7 +155,9 @@ def load_manifest(path: Path, server_name: str) -> Manifest:
 
 def _validate_schema(raw: dict, path: Path) -> None:
     schema = schema_capability_manifest()
-    errors = sorted(jsonschema.Draft202012Validator(schema).iter_errors(raw), key=lambda e: str(e.path))
+    errors = sorted(
+        jsonschema.Draft202012Validator(schema).iter_errors(raw), key=lambda e: str(e.path)
+    )
     if errors:
         msgs = "; ".join(f"{e.json_path}: {e.message}" for e in errors[:3])
         raise ManifestError(f"{path}: schema validation failed: {msgs}")
@@ -181,8 +178,8 @@ def _build(raw: dict, server_name: str, raw_text: str) -> Manifest:
     trifecta = raw.get("trifecta", {})
     grants_raw = raw.get("grants", {}).get("tools", [])
     guards_raw = raw.get("grants", {}).get("argument_guards", [])
-    taint_raw  = raw.get("taint_rules", [])
-    watch_raw  = raw.get("integrity_watch", [])
+    taint_raw = raw.get("taint_rules", [])
+    watch_raw = raw.get("integrity_watch", [])
 
     return Manifest(
         server=server_name,

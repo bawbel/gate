@@ -17,7 +17,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from bawbel_gate._const import (
-    EFFECT_ALLOW,
     EFFECT_APPROVE,
     EFFECT_DENY,
     EFFECT_ORDER,
@@ -69,8 +68,6 @@ def resolve(
     session: "SessionState",  # type: ignore[name-defined]  # noqa: F821
 ) -> Decision:
     """Run the full grant resolution pipeline per DESIGN.md 5.2."""
-    from bawbel_gate.policy.manifest import Manifest
-    from bawbel_gate.mux.session import SessionState
 
     # Step 1-2: match grant; no match -> deny
     grant = manifest.match_grant(tool)

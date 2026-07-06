@@ -103,10 +103,13 @@ class TestLayer2PrivateRead:
         session.mark_private_touched()
 
         # create_or_update_file is granted at 'approve' in the corpus manifest
-        d = resolve("create_or_update_file", {"path": ".env", "content": "secret"}, manifest, session)
+        d = resolve(
+            "create_or_update_file", {"path": ".env", "content": "secret"}, manifest, session
+        )
         # The grant is approve; trifecta fires and lattice_min(approve, approve)=approve
         assert d.effect != EFFECT_ALLOW, (
-            f"Layer 2 regression: private_touched+untrusted_seen must gate to >= approve, got {d.effect!r}"
+            "Layer 2 regression: private_touched+untrusted_seen must gate to >= approve,"
+            f" got {d.effect!r}"
         )
 
     def test_unmatched_tool_denied_after_private_read(self):
@@ -159,7 +162,8 @@ class TestLayer3PrToFork:
             session,
         )
         assert d.effect == EFFECT_DENY, (
-            f"Layer 3a regression: PR to out-of-org fork must be denied by condition, got {d.effect!r}"
+            "Layer 3a regression: PR to out-of-org fork must be denied by condition,"
+            f" got {d.effect!r}"
         )
 
     def test_pr_trifecta_third_leg_fires_on_external_comms(self):
@@ -181,7 +185,8 @@ class TestLayer3PrToFork:
             session,
         )
         assert d.effect != EFFECT_ALLOW, (
-            f"Layer 3b regression: trifecta must block allow on full 3-leg completion, got {d.effect!r}"
+            "Layer 3b regression: trifecta must block allow on full 3-leg completion,"
+            f" got {d.effect!r}"
         )
         assert d.reason == REASON_TRIFECTA_THIRD_LEG, (
             f"Layer 3b regression: deny reason must be trifecta_third_leg, got {d.reason!r}"
