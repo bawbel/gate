@@ -6,7 +6,6 @@ See DESIGN.md 8.5 (SIEM and OTel export) and IMPLEMENTATION_PLAN.md M5.
 from __future__ import annotations
 
 import json
-import textwrap
 from pathlib import Path
 
 import pytest

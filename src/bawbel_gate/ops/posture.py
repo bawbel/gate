@@ -51,15 +51,15 @@ def compute_posture(audit_log: Path) -> PostureStats:
         REASON_TRIFECTA_THIRD_LEG,
     )
 
-    allow_count       = 0
-    approve_count     = 0
-    deny_count        = 0
-    trifecta_trips    = 0
-    drift_events      = 0
-    secret_scan_hits  = 0
+    allow_count = 0
+    approve_count = 0
+    deny_count = 0
+    trifecta_trips = 0
+    drift_events = 0
+    secret_scan_hits = 0
     approval_timeouts = 0
-    chain_gaps        = 0
-    session_count     = 0
+    chain_gaps = 0
+    session_count = 0
 
     for line in audit_log.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -76,8 +76,8 @@ def compute_posture(audit_log: Path) -> PostureStats:
             session_count += 1
 
         elif event == EVENT_CALL_DECIDED:
-            effect  = record.get("effect", "")
-            reason  = record.get("reason", "")
+            effect = record.get("effect", "")
+            reason = record.get("reason", "")
             if effect == EFFECT_ALLOW:
                 allow_count += 1
             elif effect == EFFECT_APPROVE:

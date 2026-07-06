@@ -24,7 +24,9 @@ def main() -> None:
               help="Path to gate.yaml.")
 @click.option("--learn", "learn_mode", is_flag=True, default=False,
               help="Observe-only mode: enforce nothing, record everything.")
-def serve(config: Path, learn_mode: bool) -> None:
+@click.option("--console", "console_addr", default=None, metavar="HOST:PORT",
+              help="Start the embedded console API on this address (default: 127.0.0.1:7317).")
+def serve(config: Path, learn_mode: bool, console_addr: str | None) -> None:
     """Start the gate proxy (or in learning mode, a transparent recorder)."""
     from bawbel_gate.mux.config import load_config, ConfigError
     try:
@@ -33,12 +35,40 @@ def serve(config: Path, learn_mode: bool) -> None:
         click.echo(f"bawbel-gate: config error: {exc}", err=True)
         sys.exit(1)
 
+    if console_addr is not None:
+        _start_console_server(console_addr)
+
     if learn_mode:
         click.echo("bawbel-gate: learning mode active — enforcing NOTHING, recording everything")
         _run_learn_serve(cfg)
     else:
         click.echo("bawbel-gate: enforcement mode active")
         _run_enforce_serve(cfg)
+
+
+def _start_console_server(addr: str) -> None:
+    """Parse HOST:PORT and start the embedded console in a background thread."""
+    from bawbel_gate.console.server import ConsoleServer
+    from bawbel_gate.console.state import ConsoleState
+    import datetime
+
+    if ":" in addr:
+        host, port_str = addr.rsplit(":", 1)
+        port = int(port_str)
+    else:
+        host = addr
+        port = 7317
+
+    state = ConsoleState(
+        sessions={},
+        manifests={},
+        audit_log=Path("bawbel-audit.jsonl"),
+        started_at=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        config_sha256="sha256:" + "0" * 64,
+    )
+    server = ConsoleServer(state=state, host=host, port=port)
+    server.start_background()
+    click.echo(f"console: http://{host}:{server.port}/?t={server.token}")
 
 
 def _run_learn_serve(cfg) -> None:  # type: ignore[no-untyped-def]
