@@ -1,0 +1,43 @@
+schema: bawbel/capability-manifest/v1
+subject:
+  kind: mcp-server
+  name: github-mcp
+  transport: stdio
+
+provenance_class: tool.response.github
+instruction_authority: none
+
+trifecta:
+  private_data: true
+  untrusted_content: true
+  external_comms: true
+
+grants:
+  tools:
+    - name: get_issue
+      effect: allow
+    - name: create_pull_request
+      effect: allow
+      conditions:
+        args.base_repo: {pattern: "myorg/*"}
+    - name: create_or_update_file
+      effect: approve
+    - name: "*"
+      effect: deny
+  argument_guards:
+    - applies_to: "*"
+      outbound_secret_scan: true
+      max_outbound_bytes: 32768
+
+taint_rules:
+  - when:
+      tainted_by_any: ["tool.response.github"]
+    then:
+      - tool: create_pull_request
+        effect: approve
+      - tool: create_issue_comment
+        effect: approve
+
+integrity_watch:
+  - kind: tool_schema
+    on_drift: suspend

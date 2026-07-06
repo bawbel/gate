@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.1",
+  "id": "AVE-2026-00042",
+  "title": "Tool Description Mutation via Dynamic Remote Fetch",
+  "description": "An MCP server that fetches its tool descriptions from a remote URL at runtime allows an attacker who controls that URL to silently change what tools appear to do. The original server binary is legitimate; the malicious content arrives through a designed fetch mechanism, bypassing binary integrity checks.",
+  "aivss": {
+    "version": "0.8",
+    "base_score": 7.9,
+    "vector": "AI:0.8/AV:N/AC:L/UI:N/PR:L/APC:H/AI:H/TC:U/SC:M"
+  },
+  "triage": {
+    "status": "reviewed"
+  },
+  "mitigation": {
+    "strategy": ["pin_integrity", "deny_by_default"],
+    "enforcement_point": "server_card_fetch",
+    "trifecta_control": "break_untrusted_content"
+  }
+}
