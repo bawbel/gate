@@ -323,3 +323,31 @@ def harden(
         click.echo(f"written: {result.manifest_path}")
     elif manifest is not None:
         click.echo("dry-run: pass --write to apply the merge")
+
+
+# ---------------------------------------------------------------------------
+# posture — agent-risk-posture report (see DESIGN.md 8.5, M5)
+# ---------------------------------------------------------------------------
+
+@main.command("posture")
+@click.option(
+    "--audit-log",
+    default="bawbel-audit.jsonl",
+    type=click.Path(path_type=Path),
+    show_default=True,
+    help="Audit log file to analyse.",
+)
+@click.option("--json", "as_json", is_flag=True, default=False,
+              help="Emit report as JSON instead of human-readable text.")
+def posture(audit_log: Path, as_json: bool) -> None:
+    """Generate an agent-risk-posture report from an audit log. See DESIGN.md 8.5."""
+    from bawbel_gate.ops.posture import compute_posture, render_posture_report, PostureError
+
+    try:
+        stats = compute_posture(audit_log)
+    except PostureError as exc:
+        click.echo(f"bawbel-gate: {exc}", err=True)
+        sys.exit(1)
+
+    fmt = "json" if as_json else "text"
+    click.echo(render_posture_report(stats, fmt=fmt))

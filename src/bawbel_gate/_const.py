@@ -122,3 +122,48 @@ ON_DRIFT_APPROVE = "approve"
 INTEGRITY_KIND_TOOL_SCHEMA = "tool_schema"
 INTEGRITY_KIND_BINARY = "binary"
 INTEGRITY_KIND_REMOTE_RESOURCE = "remote_resource"
+
+# --- Alertable event classes (see DESIGN.md 8.5) ---
+# Dot-notation names as emitted to OTel / CEF / syslog.
+ALERT_DRIFT_DETECTED = "gate.drift.detected"
+ALERT_TRIFECTA_TRIP = "gate.trifecta.trip"
+ALERT_DENY_BURST = "gate.deny.burst"
+ALERT_SECRET_SCAN_HIT = "gate.secretscan.hit"  # nosec B105 # noqa: S105 -- alert class name, not a password
+ALERT_APPROVAL_TIMEOUT = "gate.approval.timeout"
+ALERT_CHAIN_GAP = "gate.chain.gap"
+
+# Severity levels (matched to CEF and common SEM terminology)
+ALERT_SEV_CRITICAL = "critical"
+ALERT_SEV_HIGH = "high"
+ALERT_SEV_MEDIUM = "medium"
+ALERT_SEV_LOW = "low"
+
+# Default severities per DESIGN.md 8.5
+ALERT_DEFAULT_SEVERITIES: dict[str, str] = {
+    ALERT_DRIFT_DETECTED:   ALERT_SEV_HIGH,
+    ALERT_TRIFECTA_TRIP:    ALERT_SEV_MEDIUM,
+    ALERT_DENY_BURST:       ALERT_SEV_MEDIUM,
+    ALERT_SECRET_SCAN_HIT:  ALERT_SEV_HIGH,
+    ALERT_APPROVAL_TIMEOUT: ALERT_SEV_LOW,
+    ALERT_CHAIN_GAP:        ALERT_SEV_CRITICAL,
+}
+
+# OTel span name for decision pipeline (see DESIGN.md 8.5, 11.2)
+OTEL_SPAN_DECISION = "bawbel.gate.decision"
+
+# CEF header constants (ArcSight Common Event Format v25)
+CEF_VERSION = 0
+CEF_VENDOR = "bawbel"
+CEF_PRODUCT = "gate"
+CEF_DEV_VERSION = "1"
+
+# CEF severity mapping: ALERT_SEV_* -> CEF 0-10 integer
+CEF_SEVERITY: dict[str, int] = {
+    ALERT_SEV_LOW:      3,
+    ALERT_SEV_MEDIUM:   5,
+    ALERT_SEV_HIGH:     8,
+    ALERT_SEV_CRITICAL: 10,
+}
+
+# Deny burst threshold: alert when deny rate exceeds this per minute (see DESIGN.md 8.5)
+DENY_BURST_THRESHOLD_PER_MIN = 10

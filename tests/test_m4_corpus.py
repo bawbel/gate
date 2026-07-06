@@ -16,11 +16,12 @@ A benign corpus should produce zero approve-effects at p95.
 from __future__ import annotations
 
 import json
-import statistics
 import time
 from pathlib import Path
 
-from bawbel_gate._const import EFFECT_APPROVE, LATENCY_P95_MAX_MS, APPROVAL_BUDGET_P95, APPROVAL_BUDGET_P99
+from bawbel_gate._const import (
+    EFFECT_APPROVE, LATENCY_P95_MAX_MS, APPROVAL_BUDGET_P95, APPROVAL_BUDGET_P99,
+)
 from bawbel_gate.policy.engine import resolve
 from bawbel_gate.policy.manifest import load_manifest
 from bawbel_gate.mux.session import SessionState
@@ -178,7 +179,7 @@ class TestSecurityReview:
 
     def test_no_fail_open_path_in_engine(self):
         """The engine must always return a Decision; no path raises or returns None."""
-        from bawbel_gate.policy.manifest import Manifest, ToolGrant
+        from bawbel_gate.policy.manifest import Manifest
         manifest = Manifest(
             server="s", provenance_class="tool.response.s",
             instruction_authority="none",

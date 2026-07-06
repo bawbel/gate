@@ -24,6 +24,10 @@ dev = [
     "bandit[toml]>=1.7",
     "pytest-anyio>=0.0.0",
 ]
+ops = [
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.20",
+]
 
 [project.scripts]
 bawbel-gate = "bawbel_gate.cli:main"
