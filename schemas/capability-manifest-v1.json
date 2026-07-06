@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.bawbel.io/capability-manifest/v1.json",
+  "title": "Bawbel Capability Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "subject", "provenance_class", "instruction_authority", "trifecta", "grants"],
+  "properties": {
+    "schema": {"const": "bawbel/capability-manifest/v1"},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": {"enum": ["mcp-server", "skill", "subagent"]},
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"},
+        "transport": {"enum": ["stdio", "http", "n/a"]},
+        "binary_integrity": {"$ref": "#/$defs/sha256"},
+        "tool_schema_integrity": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "provenance_class": {"$ref": "#/$defs/provenanceClass"},
+    "instruction_authority": {"enum": ["none", "advisory", "full"]},
+    "trifecta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["private_data", "untrusted_content", "external_comms"],
+      "properties": {
+        "private_data": {"type": "boolean"},
+        "untrusted_content": {"type": "boolean"},
+        "external_comms": {"type": "boolean"}
+      }
+    },
+    "grants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tools"],
+      "properties": {
+        "tools": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/toolGrant"}
+        },
+        "argument_guards": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/argumentGuard"}
+        }
+      }
+    },
+    "taint_rules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/taintRule"}
+    },
+    "integrity_watch": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/integrityWatch"}
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "channel": {"enum": ["terminal", "webhook", "slack"]},
+        "timeout_seconds": {"type": "integer", "minimum": 5, "maximum": 3600},
+        "on_timeout": {"enum": ["deny"]}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "provenanceClass": {
+      "type": "string",
+      "pattern": "^(user\\.direct|operator\\.system|skill\\.file|memory\\.persisted|model\\.generated|web\\.fetched|tool\\.response\\.[a-z0-9._-]+)$"
+    },
+    "effect": {"enum": ["allow", "approve", "deny"]},
+    "toolGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "effect"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^([a-zA-Z0-9_]+|\\*)$"},
+        "effect": {"$ref": "#/$defs/effect"},
+        "conditions": {
+          "type": "object",
+          "propertyNames": {"pattern": "^args\\.[a-zA-Z0-9_.]+$"},
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+              "pattern": {"type": "string"},
+              "equals": {},
+              "one_of": {"type": "array", "minItems": 1},
+              "max_bytes": {"type": "integer", "minimum": 1}
+            }
+          }
+        }
+      }
+    },
+    "argumentGuard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applies_to"],
+      "properties": {
+        "applies_to": {"type": "string"},
+        "outbound_secret_scan": {"type": "boolean", "default": true},
+        "max_outbound_bytes": {"type": "integer", "minimum": 256}
+      }
+    },
+    "taintRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["when", "then"],
+      "properties": {
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "tainted_by_any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string"}
+            },
+            "tainted_by_all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "then": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["effect"],
+            "properties": {
+              "tool": {"type": "string"},
+              "tools_with": {"enum": ["external_comms", "private_data"]},
+              "effect": {"$ref": "#/$defs/effect"}
+            },
+            "oneOf": [{"required": ["tool"]}, {"required": ["tools_with"]}]
+          }
+        }
+      }
+    },
+    "integrityWatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "on_drift"],
+      "properties": {
+        "kind": {"enum": ["tool_schema", "binary", "remote_resource"]},
+        "url_pattern": {"type": "string"},
+        "snapshot_at": {"enum": ["grant", "session_start"]},
+        "diff": {"enum": ["hash", "semantic"]},
+        "on_drift": {"enum": ["suspend", "deny", "approve"]}
+      }
+    },
+    "manifestStanza": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "taint_rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/taintRule"}
+        },
+        "integrity_watch": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/integrityWatch"}
+        },
+        "argument_guards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/argumentGuard"}
+        },
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "channel": {"enum": ["terminal", "webhook", "slack"]},
+            "timeout_seconds": {"type": "integer", "minimum": 5, "maximum": 3600},
+            "on_timeout": {"enum": ["deny"]}
+          }
+        }
+      }
+    }
+  }
+}

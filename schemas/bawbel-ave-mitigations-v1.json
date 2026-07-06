@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.bawbel.io/bawbel-ave-mitigations/v1.json",
+  "title": "Bawbel AVE Mitigations Map v1",
+  "description": "Maps AVE IDs to concrete capability-manifest stanzas and their review state. See BAWBEL_GATE_MITIGATIONS_SPEC.md Section 3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generated_against_ave_schema", "mitigations"],
+  "properties": {
+    "schema": {"const": "bawbel/ave-mitigations/v1"},
+    "generated_against_ave_schema": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "mitigations": {
+      "type": "object",
+      "propertyNames": {"pattern": "^AVE-[0-9]{4}-[0-9]{5}$"},
+      "additionalProperties": {"$ref": "#/$defs/entry"}
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["review_status", "derives_from", "manifest_stanza"],
+      "properties": {
+        "review_status": {
+          "enum": ["unreviewed", "llm_drafted", "reviewed"]
+        },
+        "reviewed_by": {
+          "type": "string",
+          "description": "Reviewer identity. Required when review_status is 'reviewed'."
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "derives_from": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy"],
+          "description": "Snapshot of the AVE record's abstract mitigation object at authoring time.",
+          "properties": {
+            "strategy": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "enum": [
+                  "deny_by_default",
+                  "require_human_approval",
+                  "pin_integrity",
+                  "isolate_scope",
+                  "validate_input",
+                  "sanitize_output",
+                  "verify_identity",
+                  "sever_egress",
+                  "least_privilege",
+                  "provenance_label"
+                ]
+              }
+            },
+            "enforcement_point": {
+              "enum": [
+                "static_scan",
+                "server_card_fetch",
+                "runtime_proxy",
+                "agent_framework",
+                "downstream_system",
+                "network_layer"
+              ]
+            },
+            "trifecta_control": {
+              "enum": [
+                "break_private_data",
+                "break_untrusted_content",
+                "break_external_comms",
+                "not_applicable"
+              ]
+            }
+          }
+        },
+        "manifest_stanza": {
+          "type": "object",
+          "description": "Validated separately against capability-manifest/v1#/$defs/manifestStanza. Only taint_rules, integrity_watch, argument_guards allowed — no grants (see BAWBEL_GATE_MITIGATIONS_SPEC.md 6).",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "taint_rules": {"type": "array", "minItems": 1},
+            "integrity_watch": {"type": "array", "minItems": 1},
+            "argument_guards": {"type": "array", "minItems": 1}
+          }
+        },
+        "rule_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^bawbel-gate/[a-z0-9-]+/AVE-[0-9]{4}-[0-9]{5}/[0-9]+$"
+          },
+          "description": "One stable rule_id per rule in manifest_stanza, minted at authoring time. Required when review_status is 'reviewed'."
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"review_status": {"const": "reviewed"}}},
+          "then": {
+            "required": ["review_status", "derives_from", "manifest_stanza", "reviewed_by", "reviewed_at", "rule_ids"]
+          }
+        }
+      ]
+    }
+  }
+}

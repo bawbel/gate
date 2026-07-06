@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.bawbel.io/ave/1.2.json",
+  "title": "AVE Record Schema v1.2",
+  "description": "Agentic Vulnerability Enumeration record schema. v1.2 adds provenance_vector, trifecta_profile, and capability_mitigation as optional nullable fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "title", "description", "aivss", "triage", "mitigation"],
+  "properties": {
+    "schema_version": {"const": "1.2"},
+    "id": {
+      "type": "string",
+      "pattern": "^AVE-[0-9]{4}-[0-9]{5}$"
+    },
+    "title": {"type": "string", "minLength": 1},
+    "description": {"type": "string", "minLength": 1},
+    "aivss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "base_score"],
+      "properties": {
+        "version": {"type": "string"},
+        "base_score": {"type": "number", "minimum": 0, "maximum": 10},
+        "vector": {"type": "string"}
+      }
+    },
+    "triage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["draft", "reviewed", "deprecated"]},
+        "provenance": {"enum": ["unclassified", "classified", "backfilled"]}
+      }
+    },
+    "mitigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy"],
+      "properties": {
+        "strategy": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/strategyVerb"}
+        },
+        "enforcement_point": {"$ref": "#/$defs/enforcementPoint"},
+        "trifecta_control": {"$ref": "#/$defs/trifectaControl"}
+      }
+    },
+    "provenance_vector": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/provenanceVector"}]
+    },
+    "trifecta_profile": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/trifectaProfile"}]
+    },
+    "capability_mitigation": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/capabilityMitigation"}]
+    }
+  },
+  "$defs": {
+    "strategyVerb": {
+      "enum": [
+        "deny_by_default",
+        "require_human_approval",
+        "pin_integrity",
+        "isolate_scope",
+        "validate_input",
+        "sanitize_output",
+        "verify_identity",
+        "sever_egress",
+        "least_privilege",
+        "provenance_label"
+      ]
+    },
+    "enforcementPoint": {
+      "enum": [
+        "static_scan",
+        "server_card_fetch",
+        "runtime_proxy",
+        "agent_framework",
+        "downstream_system",
+        "network_layer"
+      ]
+    },
+    "trifectaControl": {
+      "enum": [
+        "break_private_data",
+        "break_untrusted_content",
+        "break_external_comms",
+        "not_applicable"
+      ]
+    },
+    "entryClass": {
+      "type": "string",
+      "pattern": "^(user\\.direct|operator\\.system|skill\\.file|memory\\.persisted|model\\.generated|web\\.fetched|tool\\.response\\.\\*|tool\\.response\\.[a-z0-9._-]+|tool\\.schema|server\\.card)$"
+    },
+    "escalation": {
+      "enum": ["data->instruction", "instruction->capability", "capability->identity"]
+    },
+    "provenanceVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entry_class", "escalation"],
+      "properties": {
+        "entry_class": {"$ref": "#/$defs/entryClass"},
+        "payload_surface": {"type": "string"},
+        "escalation": {"$ref": "#/$defs/escalation"}
+      }
+    },
+    "trifectaProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "requires": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"enum": ["private_data", "untrusted_content", "external_comms"]}
+        },
+        "private_data": {"enum": ["amplifies"]},
+        "untrusted_content": {"enum": ["amplifies"]},
+        "external_comms": {"enum": ["amplifies"]}
+      }
+    },
+    "capabilityMitigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest_stanza"],
+      "properties": {
+        "manifest_stanza": {
+          "type": "object",
+          "description": "Fragment; validated separately against capability-manifest/v1#/$defs/manifestStanza. See DESIGN.md 9.1.",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "taint_rules": {"type": "array", "minItems": 1},
+            "integrity_watch": {"type": "array", "minItems": 1},
+            "argument_guards": {"type": "array", "minItems": 1}
+          }
+        },
+        "integrity_requirements": {
+          "type": "array",
+          "items": {"enum": ["tool_schema_integrity", "binary_integrity"]}
+        }
+      }
+    }
+  }
+}
