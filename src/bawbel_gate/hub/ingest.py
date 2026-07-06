@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from bawbel_gate._const import AUDIT_CHAIN_GENESIS, ALERT_CHAIN_GAP
+from bawbel_gate._const import AUDIT_CHAIN_GENESIS
 from bawbel_gate.audit.writer import _compute_hash
 
 
@@ -31,7 +31,7 @@ class ChainMismatch(ValueError):
 class IngestResult:
     ok:     bool
     acked:  dict[str, int] = field(default_factory=dict)
-    errors: list[str]      = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 def process_batch(

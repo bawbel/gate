@@ -14,23 +14,19 @@ Tests cover:
 from __future__ import annotations
 
 import json
-import threading
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 import pytest
 
-from bawbel_gate.hub.store import FleetStore, StoreError
+from bawbel_gate.hub.store import FleetStore
 from bawbel_gate.hub.enroll import EnrollmentRegistry, EnrollmentError
-from bawbel_gate.hub.ingest import process_batch, IngestResult, ChainMismatch
+from bawbel_gate.hub.ingest import process_batch, ChainMismatch
 from bawbel_gate.hub.fleet import compute_fleet_posture, GatePostureRow
 from bawbel_gate._const import (
-    AUDIT_CHAIN_GENESIS,
     EVENT_CALL_DECIDED,
     EVENT_DRIFT_DETECTED,
-    EVENT_SESSION_START,
     EFFECT_ALLOW,
     EFFECT_APPROVE,
     EFFECT_DENY,
@@ -111,7 +107,8 @@ class TestFleetStore:
                 "effect": EFFECT_APPROVE,
                 "reason": REASON_TRIFECTA_THIRD_LEG,
             })
-            records = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+            lines = path.read_text(encoding="utf-8").splitlines()
+            records = [json.loads(l) for l in lines if l.strip()]
         finally:
             os.unlink(path)
         store.upsert_records("gate-1", records)
@@ -132,7 +129,8 @@ class TestFleetStore:
                 "session": "s1",
                 "server": "github",
             })
-            records = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+            lines = path.read_text(encoding="utf-8").splitlines()
+            records = [json.loads(l) for l in lines if l.strip()]
         finally:
             os.unlink(path)
         store.upsert_records("gate-1", records)
@@ -207,7 +205,6 @@ class TestChainVerification:
         r1 = _make_records("gate-1", "s1", count=2)
         process_batch("gate-1", r1, store)
         # Build continuation starting from r1's head
-        from bawbel_gate.audit.writer import _compute_hash
         import tempfile, os
         with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as tf:
             path = Path(tf.name)

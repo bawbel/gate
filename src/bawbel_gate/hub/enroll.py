@@ -11,7 +11,6 @@ from __future__ import annotations
 import secrets
 import sqlite3
 import threading
-from typing import Any
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS enrollment_tokens (

@@ -20,14 +20,13 @@ import threading
 from dataclasses import asdict
 from typing import Any
 
-from bawbel_gate.console.auth import verify_token
 from bawbel_gate.hub.enroll import EnrollmentRegistry, EnrollmentError
 from bawbel_gate.hub.fleet import compute_fleet_posture
 from bawbel_gate.hub.ingest import process_batch, ChainMismatch
 from bawbel_gate.hub.store import FleetStore
 
 _RE_GATE_RECORDS = re.compile(r"^/v1/gates/([^/]+)/records$")
-_RE_FLEET_GATE   = re.compile(r"^/v1/fleet/gates/([^/]+)$")
+_RE_FLEET_GATE = re.compile(r"^/v1/fleet/gates/([^/]+)$")
 
 
 class _HubHandler(http.server.BaseHTTPRequestHandler):
@@ -152,15 +151,15 @@ class HubServer:
         host: str = "127.0.0.1",
         port: int = 8443,
     ) -> None:
-        self._store  = store
+        self._store = store
         self._enroll = enroll
-        admin_token  = enroll.mint_admin_token()
+        admin_token = enroll.mint_admin_token()
 
         self._httpd = http.server.HTTPServer((host, port), _HubHandler)
         self._httpd.timeout = 0.5
 
         handler_cls = self._httpd.RequestHandlerClass
-        handler_cls.hub_store  = store
+        handler_cls.hub_store = store
         handler_cls.hub_enroll = enroll
         handler_cls.admin_token = admin_token
 

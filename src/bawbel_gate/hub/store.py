@@ -13,7 +13,6 @@ import threading
 from typing import Any
 
 from bawbel_gate._const import (
-    AUDIT_CHAIN_GENESIS,
     EFFECT_ALLOW,
     EFFECT_APPROVE,
     EFFECT_DENY,
