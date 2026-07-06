@@ -167,3 +167,16 @@ CEF_SEVERITY: dict[str, int] = {
 
 # Deny burst threshold: alert when deny rate exceeds this per minute (see DESIGN.md 8.5)
 DENY_BURST_THRESHOLD_PER_MIN = 10
+
+# --- Network defaults (see DESIGN.md 13.1, 14) ---
+# All overridable via env vars documented in README; see cli.py for envvar= bindings.
+CONSOLE_DEFAULT_HOST = "127.0.0.1"
+CONSOLE_DEFAULT_PORT = 7317
+HUB_DEFAULT_HOST = "127.0.0.1"
+HUB_DEFAULT_PORT = 8443
+
+# --- Internal server tuning ---
+SSE_HEARTBEAT_INTERVAL_S = 15.0  # seconds between SSE keepalive comments
+HTTP_POLL_INTERVAL_S = 0.5   # seconds between SSE audit-log polls
+HTTP_SHUTDOWN_TIMEOUT_S = 2.0   # join timeout when stopping background thread
+HTTP_SERVER_POLL_S = 0.5   # HTTPServer.timeout (select loop granularity)
