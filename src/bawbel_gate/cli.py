@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -381,3 +382,82 @@ def posture(audit_log: Path, as_json: bool) -> None:
 
     fmt = "json" if as_json else "text"
     click.echo(render_posture_report(stats, fmt=fmt))
+
+
+# ---------------------------------------------------------------------------
+# enroll — gate-side hub enrollment (see DESIGN.md 14.3, M7)
+# ---------------------------------------------------------------------------
+
+@main.command("enroll")
+@click.option("--hub", "hub_url", required=True, help="Hub base URL (e.g. https://hub.internal:8443).")
+@click.option("--token", required=True, help="Single-use enrollment token from 'hub token new'.")
+def enroll(hub_url: str, token: str) -> None:
+    """Enroll this gate with a bawbel-hub. See DESIGN.md 14.3."""
+    import urllib.request as _req
+    import urllib.error as _err
+    body = json.dumps({"token": token}).encode()
+    request = _req.Request(
+        f"{hub_url}/v1/enroll",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with _req.urlopen(request, timeout=10) as resp:  # nosec B310 # noqa: S310 -- URL from CLI arg
+            data = json.loads(resp.read())
+        gate_id = data.get("gate_id", "")
+        click.echo(f"enrolled: gate_id={gate_id}")
+        click.echo(f"  hub: {hub_url}")
+    except _err.HTTPError as exc:
+        click.echo(f"bawbel-gate: enroll failed: HTTP {exc.code}", err=True)
+        sys.exit(1)
+    except Exception as exc:  # noqa: BLE001 -- CLI error display
+        click.echo(f"bawbel-gate: enroll error: {exc}", err=True)
+        sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# hub subgroup — bawbel-hub server commands (see DESIGN.md 14, M7)
+# ---------------------------------------------------------------------------
+
+@main.group("hub")
+def hub_group() -> None:
+    """bawbel-hub fleet management commands."""
+
+
+@hub_group.command("serve")
+@click.option("--db", default="bawbel-hub.db", type=click.Path(path_type=Path),
+              show_default=True, help="SQLite database path (use ':memory:' for testing).")
+@click.option("--port", default=8443, show_default=True, help="Port to listen on.")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Host to bind.")
+def hub_serve(db: Path, port: int, host: str) -> None:
+    """Start the bawbel-hub ingest + fleet console server. See DESIGN.md 14."""
+    from bawbel_gate.hub.store import FleetStore
+    from bawbel_gate.hub.enroll import EnrollmentRegistry
+    from bawbel_gate.hub.server import HubServer
+
+    store = FleetStore(str(db))
+    enroll_reg = EnrollmentRegistry(str(db) if str(db) != ":memory:" else ":memory:")
+    server = HubServer(store=store, enroll=enroll_reg, host=host, port=port)
+    server.start_background()
+    click.echo(f"hub: listening on http://{host}:{server.port}")
+    click.echo(f"  admin token: {server.admin_token}")
+    try:
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        server.stop()
+        click.echo("hub: stopped")
+
+
+@hub_group.command("token")
+@click.argument("action", type=click.Choice(["new"]))
+@click.option("--db", default="bawbel-hub.db", type=click.Path(path_type=Path),
+              show_default=True)
+def hub_token(action: str, db: Path) -> None:
+    """Mint a new single-use enrollment token. Usage: hub token new."""
+    from bawbel_gate.hub.enroll import EnrollmentRegistry
+    enroll_reg = EnrollmentRegistry(str(db))
+    token = enroll_reg.mint_token()
+    click.echo(f"enrollment token: {token}")

@@ -58,7 +58,6 @@ class TestBearerToken:
 
     def test_verify_is_constant_time(self):
         """verify_token uses hmac.compare_digest or equivalent to resist timing attacks."""
-        import hmac
         token = mint_token()
         # Ensure implementation uses compare_digest (property, not timing test)
         from bawbel_gate.console.auth import verify_token as vt

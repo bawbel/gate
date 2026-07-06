@@ -232,8 +232,8 @@ class ConsoleServer:
         host: str = "127.0.0.1",
         port: int = 7317,
     ) -> None:
-        self.token     = mint_token()
-        self._state    = state
+        self.token = mint_token()
+        self._state = state
         self._approvals = ApprovalRegistry()
         # Port 0 lets the OS pick a free port (useful in tests).
         self._httpd = http.server.HTTPServer((host, port), _Handler)

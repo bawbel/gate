@@ -19,7 +19,7 @@ import secrets
 
 class ApprovalDecision(Enum):
     GRANT = "grant"
-    DENY  = "deny"
+    DENY = "deny"
 
 
 @dataclass
@@ -30,7 +30,7 @@ class PendingApproval:
     cause:      str
     expires_at: str
     _expire_ts: float = field(repr=False)
-    _decided:   bool  = field(default=False, repr=False)
+    _decided:   bool = field(default=False, repr=False)
     _lock:      threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def is_expired(self) -> bool:
