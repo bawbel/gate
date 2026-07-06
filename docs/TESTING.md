@@ -485,7 +485,9 @@ All defaults work without any env vars set. Override for containers or CI:
 | `BAWBEL_SCHEMAS_DIR` | `schemas/` | Vendored JSON schema directory |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | _(none)_ | OTel collector endpoint |
 
-See `.env.example` for a copy-paste template.
+Set these in your shell profile, process manager (systemd, supervisor), or container
+runtime (`ENV` in Dockerfile, `env:` in Kubernetes). Do not use `.env` files — they
+are readable by subprocesses and are not appropriate for a security product.
 
 ---
 
