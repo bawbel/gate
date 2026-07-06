@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "bawbel-gate"
 version = "0.1.0"
 description = "Runtime enforcement proxy for MCP agents: capability manifests, session taint, trifecta invariant, hash-chained audit"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 dependencies = [
     "jsonschema>=4.21",
