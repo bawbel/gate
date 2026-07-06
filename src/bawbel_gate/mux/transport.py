@@ -8,7 +8,7 @@ MCP servers it spawns as subprocesses.
 from __future__ import annotations
 
 import json
-import subprocess
+import subprocess  # nosec B404 # noqa: S404
 import sys
 from typing import IO, Any, Iterator
 
@@ -38,7 +38,9 @@ def write_message(stream: IO[str], message: JsonRpcMessage) -> None:
     stream.flush()
 
 
-def deny_response(request_id: Any, code: int, message: str, data: dict[str, Any] | None = None) -> JsonRpcMessage:
+def deny_response(
+    request_id: Any, code: int, message: str, data: dict[str, Any] | None = None
+) -> JsonRpcMessage:
     """Build a JSON-RPC error response."""
     error: dict[str, Any] = {"code": code, "message": message}
     if data is not None:

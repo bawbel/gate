@@ -27,7 +27,9 @@ def render_report(obs_path: Path, out: TextIO) -> None:
         total_calls = sum(t["call_count"] for t in tools)
         out.write(f"\n=== {server} ({len(tools)} tool(s), {total_calls} call(s)) ===\n")
         for tool in sorted(tools, key=lambda t: -t["call_count"]):
-            out.write(f"  {tool['tool']:40s}  calls={tool['call_count']}  last={tool['last_seen']}\n")
+            out.write(
+                f"  {tool['tool']:40s}  calls={tool['call_count']}  last={tool['last_seen']}\n"
+            )
             arg_types: dict[str, set[str]] = defaultdict(set)
             arg_prefixes: dict[str, list[str]] = defaultdict(list)
             for a in tool["arg_observations"]:

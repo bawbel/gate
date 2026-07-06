@@ -1,7 +1,6 @@
 """Tests for audit canonical JSON, writer, and chain verifier (invariants I6, I7)."""
 
 import json
-import hashlib
 from pathlib import Path
 
 from bawbel_gate.audit.canonical import canonical_bytes, canonical_str
@@ -45,7 +44,7 @@ class TestCanonical:
             line for line in result.stdout.splitlines()
             if "canonical.py" not in line
         ]
-        assert not hits, f"sort_keys=True found outside canonical.py:\n" + "\n".join(hits)
+        assert not hits, "sort_keys=True found outside canonical.py:\n" + "\n".join(hits)
 
 
 class TestAuditWriter:

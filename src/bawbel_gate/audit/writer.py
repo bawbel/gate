@@ -10,7 +10,7 @@ import contextlib
 import hashlib
 import json
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +21,7 @@ from bawbel_gate.audit.canonical import canonical_bytes
 @dataclass
 class ChainState:
     prev: str = AUDIT_CHAIN_GENESIS
-    seq: int  = 0
+    seq: int = 0
 
 
 class AuditWriter:
@@ -36,6 +36,15 @@ class AuditWriter:
         self._lock = threading.Lock()
         self._chain = ChainState()
         path.parent.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def from_existing(cls, path: Path) -> "AuditWriter":
+        """Resume writing to an existing audit log, continuing the chain from its head."""
+        writer = cls.__new__(cls)
+        writer._path = path
+        writer._lock = threading.Lock()
+        writer._chain = _load_chain_head(path)
+        return writer
 
     def append(self, event: dict[str, Any]) -> str:
         """Write one audit record, return its hash."""
@@ -62,6 +71,25 @@ class AuditWriter:
     def seq(self) -> int:
         with self._lock:
             return self._chain.seq
+
+
+def _load_chain_head(path: Path) -> ChainState:
+    """Read the existing JSONL log and return its final chain state."""
+    if not path.exists():
+        return ChainState()
+    prev = AUDIT_CHAIN_GENESIS
+    seq = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        with contextlib.suppress(json.JSONDecodeError):
+            record = json.loads(line)
+            h = record.get("hash", "")
+            if h:
+                prev = h
+            seq = record.get("seq", seq)
+    return ChainState(prev=prev, seq=seq)
 
 
 def _compute_hash(record_without_hash: dict[str, Any], prev: str) -> str:
@@ -111,7 +139,10 @@ def verify_chain(path: Path) -> VerifyResult:
         if stored_prev != prev:
             return VerifyResult(
                 ok=False, records=count,
-                error=f"seq {record.get('seq')}: prev mismatch (expected {prev!r}, got {stored_prev!r})",
+                error=(
+                    f"seq {record.get('seq')}: prev mismatch"
+                    f" (expected {prev!r}, got {stored_prev!r})"
+                ),
                 error_seq=record.get("seq"),
             )
         if stored_hash != expected:

@@ -53,7 +53,8 @@ def synthesize_manifests(obs_path: Path, out_dir: Path) -> list[Path]:
     for server, tools in sorted(by_server.items()):
         manifest = _build_manifest(server, tools)
         dest = out_dir / f"{server}.cap.yaml"
-        dest.write_text(_DRAFT_BANNER + yaml.dump(manifest, default_flow_style=False, sort_keys=False), encoding="utf-8")
+        content = _DRAFT_BANNER + yaml.dump(manifest, default_flow_style=False, sort_keys=False)
+        dest.write_text(content, encoding="utf-8")
         print(f"wrote {dest}  ({len(tools)} allow grants, wildcard deny)")
         written.append(dest)
 

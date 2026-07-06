@@ -6,7 +6,6 @@ Each test group:
   3. Known-bad inputs are rejected with the right path.
 """
 
-import json
 from pathlib import Path
 
 import jsonschema
@@ -161,7 +160,7 @@ class TestCapabilityManifestSchema:
         assert len(errors) >= 4
 
     def test_allow_effect_valid_in_grant(self, cap_manifest_schema):
-        """allow is a valid grant effect in a full manifest (mitigation stanzas restrict this separately)."""
+        """allow is valid in a full manifest; mitigation stanzas restrict this separately."""
         manifest = {
             "schema": "bawbel/capability-manifest/v1",
             "subject": {"kind": "mcp-server", "name": "fs-mcp"},
@@ -183,7 +182,9 @@ class TestCapabilityManifestSchema:
             "subject": {"kind": "mcp-server", "name": "test"},
             "provenance_class": "bad.class",
             "instruction_authority": "none",
-            "trifecta": {"private_data": False, "untrusted_content": False, "external_comms": False},
+            "trifecta": {
+                "private_data": False, "untrusted_content": False, "external_comms": False
+            },
             "grants": {"tools": [{"name": "*", "effect": "deny"}]},
         }
         errors = list(_validator(cap_manifest_schema).iter_errors(manifest))
@@ -196,7 +197,9 @@ class TestCapabilityManifestSchema:
             "subject": {"kind": "mcp-server", "name": "test"},
             "provenance_class": "tool.response.test",
             "instruction_authority": "none",
-            "trifecta": {"private_data": False, "untrusted_content": False, "external_comms": False},
+            "trifecta": {
+                "private_data": False, "untrusted_content": False, "external_comms": False
+            },
             "grants": {"tools": [{"name": "*", "effect": "deny"}]},
             "approval": {"channel": "terminal", "timeout_seconds": 30, "on_timeout": "allow"},
         }

@@ -28,9 +28,9 @@ class ToolObservation:
     """Aggregated observations for one (server, tool) pair."""
     server: str
     tool: str
-    call_count: int                          = 0
-    arg_observations: list[ArgObservation]   = field(default_factory=list)
-    last_seen: str                           = ""
+    call_count: int = 0
+    arg_observations: list[ArgObservation] = field(default_factory=list)
+    last_seen: str = ""
 
 
 class LearnRecorder:

@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 
-from bawbel_gate._const import SCHEMA_GATE_CONFIG_V1
 
 
 @click.group()
@@ -111,7 +110,6 @@ def audit_verify(file: Path) -> None:
 @click.option("--lines", "-n", default=20, show_default=True)
 def audit_tail(file: Path, follow: bool, lines: int) -> None:
     """Print the last N records from an audit log."""
-    import json
     import time
     all_lines = file.read_text(encoding="utf-8").splitlines()
     for line in all_lines[-lines:]:
@@ -136,10 +134,29 @@ def audit_tail(file: Path, follow: bool, lines: int) -> None:
 @click.option("--session", required=True, help="Session ID to clear.")
 @click.option("--confirm", is_flag=True, required=True,
               help="Required explicit confirmation flag.")
-def clear_session(session: str, confirm: bool) -> None:
+@click.option("--audit-log", default="bawbel-audit.jsonl", type=click.Path(path_type=Path),
+              help="Audit log file to append the SESSION_CLEAR record to.")
+def clear_session(session: str, confirm: bool, audit_log: Path) -> None:
     """Reset taint for a session (operator action, audited). See DESIGN.md 6.1."""
-    # Enforcement implementation in M2; the CLI surface is locked here.
-    click.echo(f"bawbel-gate: SESSION_CLEAR for {session} (audit record written in M2)")
+    import datetime
+    from bawbel_gate.audit.writer import AuditWriter
+    from bawbel_gate._const import EVENT_SESSION_CLEAR
+
+    if not confirm:
+        click.echo("bawbel-gate: --confirm flag required for SESSION_CLEAR", err=True)
+        sys.exit(1)
+
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    writer = AuditWriter.from_existing(audit_log)
+    record_hash = writer.append({
+        "ts": ts,
+        "event": EVENT_SESSION_CLEAR,
+        "session": session,
+        "operator": "cli",
+    })
+    click.echo(f"bawbel-gate: SESSION_CLEAR written for session {session}")
+    click.echo(f"  audit record: {record_hash}")
+    click.echo(f"  log: {audit_log}")
 
 
 # ---------------------------------------------------------------------------
@@ -153,7 +170,9 @@ def clear_session(session: str, confirm: bool) -> None:
               help="Fail if any grant has this effect (e.g. 'allow' for prod check).")
 @click.option("--tools-with", default=None,
               help="Scope --forbid-effect to tools with this trifecta flag.")
-def lint(manifest_dir: Path, schema: str, forbid_effect: str | None, tools_with: str | None) -> None:
+def lint(
+    manifest_dir: Path, schema: str, forbid_effect: str | None, tools_with: str | None
+) -> None:
     """Validate manifests in MANIFEST_DIR against the capability-manifest schema."""
     import yaml as _yaml
     from bawbel_gate._schemas import schema_capability_manifest
@@ -175,11 +194,16 @@ def lint(manifest_dir: Path, schema: str, forbid_effect: str | None, tools_with:
 
         if forbid_effect:
             for grant in raw.get("grants", {}).get("tools", []):
-                if grant.get("effect") == forbid_effect:
-                    if tools_with is None or raw.get("trifecta", {}).get(tools_with):
-                        click.echo(f"FAIL {manifest_file.name}: grant '{grant['name']}' has forbidden effect '{forbid_effect}'")
-                        errors_found = True
-                        break
+                if (
+                    grant.get("effect") == forbid_effect
+                    and (tools_with is None or raw.get("trifecta", {}).get(tools_with))
+                ):
+                    click.echo(
+                        f"FAIL {manifest_file.name}: grant '{grant['name']}'"
+                        f" has forbidden effect '{forbid_effect}'"
+                    )
+                    errors_found = True
+                    break
             else:
                 click.echo(f"ok   {manifest_file.name}")
         else:

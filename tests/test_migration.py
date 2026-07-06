@@ -13,8 +13,8 @@ from click.testing import CliRunner
 
 from scripts.migrate_ave_v1_2 import migrate, migrate_record, validate_record
 
-REPO_ROOT  = Path(__file__).parent.parent
-AVE_V1_1   = REPO_ROOT / "tests" / "corpus" / "ave" / "v1_1"
+REPO_ROOT = Path(__file__).parent.parent
+AVE_V1_1 = REPO_ROOT / "tests" / "corpus" / "ave" / "v1_1"
 SCHEMA_DIR = REPO_ROOT / "schemas"
 
 
@@ -162,7 +162,9 @@ class TestMigrateCLI:
         schema = str(SCHEMA_DIR / "ave-1.2.json")
         args = ["--in", str(tmp_path / "in"), "--out", str(out_dir), "--schema", schema]
         self._runner().invoke(migrate, args)
-        r2 = self._runner().invoke(migrate, ["--in", str(out_dir), "--out", str(out_dir), "--schema", schema, "--force"])
+        r2 = self._runner().invoke(
+            migrate, ["--in", str(out_dir), "--out", str(out_dir), "--schema", schema, "--force"]
+        )
         assert r2.exit_code == 0
         # per-file "skip" prefix must not appear; "0 skipped" in summary is fine
         assert not any(line.startswith("skip ") for line in r2.output.splitlines())
@@ -194,13 +196,17 @@ class TestMigrateCLI:
             ],
         )
         assert result.exit_code == 1
-        assert "invalid JSON" in result.output or "invalid JSON" in (result.exception and str(result.exception) or "")
+        exc_str = str(result.exception) if result.exception else ""
+        assert "invalid JSON" in result.output or "invalid JSON" in exc_str
 
     def test_empty_directory_warns(self, tmp_path):
         empty = tmp_path / "empty"
         empty.mkdir()
         result = self._runner().invoke(
             migrate,
-            ["--in", str(empty), "--out", str(tmp_path / "out"), "--schema", str(SCHEMA_DIR / "ave-1.2.json")],
+            [
+                "--in", str(empty), "--out", str(tmp_path / "out"),
+                "--schema", str(SCHEMA_DIR / "ave-1.2.json"),
+            ],
         )
         assert result.exit_code == 0

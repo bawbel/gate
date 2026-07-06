@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT   = Path(__file__).parent.parent
-SCHEMA_DIR  = REPO_ROOT / "schemas"
-CORPUS_DIR  = REPO_ROOT / "tests" / "corpus"
-AVE_V1_1    = CORPUS_DIR / "ave" / "v1_1"
-AVE_V1_2    = CORPUS_DIR / "ave" / "v1_2"
+REPO_ROOT = Path(__file__).parent.parent
+SCHEMA_DIR = REPO_ROOT / "schemas"
+CORPUS_DIR = REPO_ROOT / "tests" / "corpus"
+AVE_V1_1 = CORPUS_DIR / "ave" / "v1_1"
+AVE_V1_2 = CORPUS_DIR / "ave" / "v1_2"
 
 
 @pytest.fixture(scope="session")

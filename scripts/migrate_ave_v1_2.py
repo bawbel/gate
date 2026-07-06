@@ -10,7 +10,8 @@ Null-insert migration per DESIGN.md 9.2:
 
 Usage:
     python scripts/migrate_ave_v1_2.py --in records/ --out records/
-    python scripts/migrate_ave_v1_2.py --in records/ --out records/ --schema schemas/ave-1.2.json --force
+    python scripts/migrate_ave_v1_2.py --in records/ --out records/ \
+        --schema schemas/ave-1.2.json --force
 """
 
 from __future__ import annotations

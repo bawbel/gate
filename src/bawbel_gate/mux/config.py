@@ -29,18 +29,22 @@ class ServerConfig:
 
 @dataclass(frozen=True)
 class ApprovalConfig:
-    channel: str          = "terminal"
+    channel: str = "terminal"
     webhook_url: str | None = None
-    timeout_seconds: int  = APPROVAL_TIMEOUT_DEFAULT_S
-    on_timeout: str       = EFFECT_DENY   # fail-closed; only valid value
+    timeout_seconds: int = APPROVAL_TIMEOUT_DEFAULT_S
+    on_timeout: str = EFFECT_DENY   # fail-closed; only valid value
 
     def __post_init__(self) -> None:
         if self.channel not in ("terminal", "webhook", "slack"):
-            raise ConfigError(f"approval.channel must be terminal|webhook|slack, got {self.channel!r}")
+            raise ConfigError(
+                f"approval.channel must be terminal|webhook|slack, got {self.channel!r}"
+            )
         if self.on_timeout != EFFECT_DENY:
             raise ConfigError("approval.on_timeout must be 'deny'; fail-open is not supported")
         if self.timeout_seconds < 5 or self.timeout_seconds > 3600:
-            raise ConfigError(f"approval.timeout_seconds must be 5..3600, got {self.timeout_seconds}")
+            raise ConfigError(
+                f"approval.timeout_seconds must be 5..3600, got {self.timeout_seconds}"
+            )
 
 
 @dataclass(frozen=True)
@@ -66,8 +70,8 @@ def load_config(path: Path) -> GateConfig:
     raw = _read_yaml(path)
     _check_schema_id(raw)
     approval = _parse_approval(raw.get("approval", {}))
-    servers  = _parse_servers(raw.get("servers", []), path.parent)
-    audit    = Path(raw.get("audit_log", "gate.audit.jsonl"))
+    servers = _parse_servers(raw.get("servers", []), path.parent)
+    audit = Path(raw.get("audit_log", "gate.audit.jsonl"))
     return GateConfig(audit_log=audit, servers=servers, approval=approval)
 
 

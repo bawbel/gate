@@ -10,7 +10,6 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 
-from bawbel_gate._const import TRIFECTA_EXTERNAL_COMMS
 from bawbel_gate._types import ProvenanceClass
 
 
@@ -18,13 +17,13 @@ from bawbel_gate._types import ProvenanceClass
 class SessionState:
     """Mutable monotone session state. See DESIGN.md 6.1."""
 
-    session_id: str                          = field(default_factory=lambda: str(uuid.uuid4()))
-    manifest_hashes: dict[str, str]          = field(default_factory=dict)
-    tainted_by: set[ProvenanceClass]         = field(default_factory=set)
-    private_touched: bool                    = False
-    untrusted_seen: bool                     = False
-    suspended: set[str]                      = field(default_factory=set)  # server names
-    seq: int                                 = 0
+    session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    manifest_hashes: dict[str, str] = field(default_factory=dict)
+    tainted_by: set[ProvenanceClass] = field(default_factory=set)
+    private_touched: bool = False
+    untrusted_seen: bool = False
+    suspended: set[str] = field(default_factory=set)  # server names
+    seq: int = 0
 
     def add_taint(self, provenance_class: ProvenanceClass) -> None:
         """Monotonically add a provenance class to the taint set."""

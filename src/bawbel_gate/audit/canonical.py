@@ -15,7 +15,9 @@ from typing import Any
 
 def canonical_bytes(obj: Any) -> bytes:
     """Serialise obj to canonical JSON bytes (sorted keys, compact, UTF-8)."""
-    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return json.dumps(
+        obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
 
 
 def canonical_str(obj: Any) -> str:

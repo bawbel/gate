@@ -39,6 +39,7 @@ include = ["src/", "schemas/", "tests/", "scripts/"]
 line-length = 100
 
 [tool.ruff.lint]
+preview = true
 select = ["E501", "E221", "E251", "E231", "F401", "F541", "F811", "SIM105", "SIM102"]
 
 # --- bandit ---------------------------------------------------------
