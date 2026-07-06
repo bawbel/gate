@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from bawbel_gate.integrity.pinning import pin_tool_schema, check_pin, detect_drift
 from bawbel_gate.mux.session import SessionState
-from bawbel_gate._const import ON_DRIFT_SUSPEND, EVENT_DRIFT_DETECTED
 
 
 _TOOLS_REVIEWED = [
@@ -155,7 +154,10 @@ class TestLayer3DriftSuspension:
             provenance_class="tool.response.github",
             instruction_authority="none",
             trifecta={"private_data": True, "untrusted_content": True, "external_comms": True},
-            grants=[ToolGrant(name="get_issue", effect="allow"), ToolGrant(name="*", effect="deny")],
+            grants=[
+                ToolGrant(name="get_issue", effect="allow"),
+                ToolGrant(name="*", effect="deny"),
+            ],
         )
         session = SessionState()
         session.suspend_server("github")

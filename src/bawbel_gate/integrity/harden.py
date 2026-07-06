@@ -100,7 +100,6 @@ def merge_stanza(manifest_raw: dict[str, Any], stanza: dict[str, Any]) -> dict[s
 
 def _merge_approval(existing: dict, stanza_approval: dict) -> dict:
     """Merge approval config: take the more restrictive of each field."""
-    from bawbel_gate._const import EFFECT_ORDER
     result = dict(existing)
     for key, val in stanza_approval.items():
         if key == "on_timeout":

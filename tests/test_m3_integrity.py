@@ -77,7 +77,10 @@ class TestHardenStanzaLoad:
 
     def test_load_missing_ave_raises(self, tmp_path):
         mf = tmp_path / "m.json"
-        mf.write_text('{"schema": "bawbel/ave-mitigations/v1", "mitigations": {}}', encoding="utf-8")
+        mf.write_text(
+            '{"schema": "bawbel/ave-mitigations/v1", "mitigations": {}}',
+            encoding="utf-8",
+        )
         with pytest.raises(HardenError, match="not found"):
             load_stanza("AVE-2026-99999", mf, allow_unreviewed=False)
 
@@ -91,7 +94,7 @@ class TestHardenStanzaLoad:
                     "manifest_stanza": {"integrity_watch": []},
                 },
             },
-        }), encoding="utf-8")
+        }), encoding="utf-8")  # noqa: E501 -- inline JSON is clearest here
         with pytest.raises(HardenError, match="allow-unreviewed"):
             load_stanza("AVE-2026-00099", mf, allow_unreviewed=False)
 
@@ -102,7 +105,9 @@ class TestHardenStanzaLoad:
             "mitigations": {
                 "AVE-2026-00099": {
                     "review_status": "unreviewed",
-                    "manifest_stanza": {"integrity_watch": [{"kind": "tool_schema", "on_drift": "suspend"}]},
+                    "manifest_stanza": {
+                        "integrity_watch": [{"kind": "tool_schema", "on_drift": "suspend"}],
+                    },
                 },
             },
         }), encoding="utf-8")
@@ -206,7 +211,9 @@ class TestVerifyCLI:
             "subject": {"kind": "mcp-server", "name": "test"},
             "provenance_class": "tool.response.test",
             "instruction_authority": "none",
-            "trifecta": {"private_data": False, "untrusted_content": False, "external_comms": False},
+            "trifecta": {
+                "private_data": False, "untrusted_content": False, "external_comms": False,
+            },
             "grants": {"tools": [{"name": "*", "effect": "deny"}]},
             "tool_schema_integrity": pin or pin_tool_schema(tools),
         }
@@ -247,7 +254,9 @@ class TestVerifyCLI:
                 "subject": {"kind": "mcp-server", "name": "test"},
                 "provenance_class": "tool.response.test",
                 "instruction_authority": "none",
-                "trifecta": {"private_data": False, "untrusted_content": False, "external_comms": False},
+                "trifecta": {
+                    "private_data": False, "untrusted_content": False, "external_comms": False,
+                },
                 "grants": {"tools": [{"name": "*", "effect": "deny"}]},
             }, default_flow_style=False),
             encoding="utf-8",
@@ -343,7 +352,9 @@ class TestHardenCLI:
             "mitigations": {
                 "AVE-2026-00099": {
                     "review_status": "unreviewed",
-                    "manifest_stanza": {"integrity_watch": [{"kind": "tool_schema", "on_drift": "suspend"}]},
+                    "manifest_stanza": {
+                        "integrity_watch": [{"kind": "tool_schema", "on_drift": "suspend"}],
+                    },
                 },
             },
         }), encoding="utf-8")
