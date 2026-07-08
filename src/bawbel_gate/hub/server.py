@@ -83,10 +83,31 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
         self._error(404, "not found")
 
     def do_POST(self) -> None:  # noqa: N802
+        path = self.path.split("?")[0]
+
+        # /v1/enroll is the bootstrap path for a gate that has no admin token yet:
+        # the single-use enrollment token itself is the credential (DESIGN.md 14.3).
+        # consume_token() rejects invalid/reused tokens with EnrollmentError -> 403.
+        if path == "/v1/enroll":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length) if length else b"{}"
+            try:
+                payload = json.loads(body)
+            except json.JSONDecodeError:
+                self._error(400, "invalid JSON")
+                return
+            enroll_token = payload.get("token", "")
+            try:
+                gate_id = self.hub_enroll.consume_token(enroll_token)
+            except EnrollmentError as exc:
+                self._error(403, str(exc))
+                return
+            self._json(200, {"gate_id": gate_id})
+            return
+
         if not self._auth():
             self._error(401, "unauthorized")
             return
-        path = self.path.split("?")[0]
 
         m = _RE_GATE_RECORDS.match(path)
         if m:
@@ -119,23 +140,6 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
         if path == "/v1/enrollment/tokens":
             token = self.hub_enroll.mint_token()
             self._json(200, {"token": token})
-            return
-
-        if path == "/v1/enroll":
-            length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length) if length else b"{}"
-            try:
-                payload = json.loads(body)
-            except json.JSONDecodeError:
-                self._error(400, "invalid JSON")
-                return
-            enroll_token = payload.get("token", "")
-            try:
-                gate_id = self.hub_enroll.consume_token(enroll_token)
-            except EnrollmentError as exc:
-                self._error(403, str(exc))
-                return
-            self._json(200, {"gate_id": gate_id})
             return
 
         self._error(404, "not found")

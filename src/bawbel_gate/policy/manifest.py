@@ -116,6 +116,7 @@ class Manifest:
     argument_guards: list[ArgumentGuard] = field(default_factory=list)
     integrity_watch: list[IntegrityWatch] = field(default_factory=list)
     manifest_sha256: str | None = None
+    tool_schema_integrity: str | None = None
 
     def match_grant(self, tool: str) -> ToolGrant | None:
         """Exact name match beats wildcard; two exact matches = validation error."""
@@ -191,6 +192,7 @@ def _build(raw: dict, server_name: str, raw_text: str) -> Manifest:
         argument_guards=[_build_guard(g) for g in guards_raw],
         integrity_watch=[_build_watch(w) for w in watch_raw],
         manifest_sha256=sha,
+        tool_schema_integrity=raw.get("tool_schema_integrity"),
     )
 
 

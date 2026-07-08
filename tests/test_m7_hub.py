@@ -399,6 +399,69 @@ class TestHubServer:
         finally:
             server.stop()
 
+    def test_enroll_consumes_token_without_admin_auth(self, tmp_path):
+        """The bootstrap flow: an unenrolled gate has no admin token yet, only the
+        single-use enrollment token, which is itself the credential (DESIGN.md 14.3).
+        """
+        base, admin_token, server = _start_hub(tmp_path)
+        try:
+            mint_req = urllib.request.Request(
+                f"{base}/v1/enrollment/tokens",
+                data=b"{}",
+                headers={
+                    "Authorization": f"Bearer {admin_token}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(mint_req, timeout=5) as resp:
+                enroll_token = json.loads(resp.read())["token"]
+
+            enroll_req = urllib.request.Request(
+                f"{base}/v1/enroll",
+                data=json.dumps({"token": enroll_token}).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(enroll_req, timeout=5) as resp:
+                assert resp.status == 200
+                data = json.loads(resp.read())
+                assert data["gate_id"]
+        finally:
+            server.stop()
+
+    def test_enroll_rejects_reused_token(self, tmp_path):
+        base, admin_token, server = _start_hub(tmp_path)
+        try:
+            mint_req = urllib.request.Request(
+                f"{base}/v1/enrollment/tokens",
+                data=b"{}",
+                headers={
+                    "Authorization": f"Bearer {admin_token}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(mint_req, timeout=5) as resp:
+                enroll_token = json.loads(resp.read())["token"]
+
+            def _enroll():
+                req = urllib.request.Request(
+                    f"{base}/v1/enroll",
+                    data=json.dumps({"token": enroll_token}).encode(),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                return urllib.request.urlopen(req, timeout=5)
+
+            with _enroll() as resp:
+                assert resp.status == 200
+            with pytest.raises(urllib.error.HTTPError) as exc_info:
+                _enroll()
+            assert exc_info.value.code == 403
+        finally:
+            server.stop()
+
     def test_no_command_channel(self, tmp_path):
         """Hub cannot issue tool calls or push commands to gates (DESIGN.md 14.6)."""
         base, admin_token, server = _start_hub(tmp_path)

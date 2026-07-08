@@ -47,18 +47,17 @@ def serve(config: Path, learn_mode: bool, console_addr: str | None) -> None:
         click.echo(f"bawbel-gate: config error: {exc}", err=True)
         sys.exit(1)
 
-    if console_addr is not None:
-        _start_console_server(console_addr)
+    console_state = _start_console_server(console_addr, cfg) if console_addr is not None else None
 
     if learn_mode:
         click.echo("bawbel-gate: learning mode active — enforcing NOTHING, recording everything")
-        _run_learn_serve(cfg)
+        _run_learn_serve(cfg, console_state)
     else:
         click.echo("bawbel-gate: enforcement mode active")
-        _run_enforce_serve(cfg)
+        _run_enforce_serve(cfg, console_state)
 
 
-def _start_console_server(addr: str) -> None:
+def _start_console_server(addr: str, cfg) -> "ConsoleState":  # type: ignore[no-untyped-def]
     """Parse HOST:PORT and start the embedded console in a background thread."""
     from bawbel_gate.console.server import ConsoleServer
     from bawbel_gate.console.state import ConsoleState
@@ -74,23 +73,32 @@ def _start_console_server(addr: str) -> None:
     state = ConsoleState(
         sessions={},
         manifests={},
-        audit_log=Path("bawbel-audit.jsonl"),
+        audit_log=cfg.audit_log,
         started_at=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         config_sha256="sha256:" + "0" * 64,
     )
     server = ConsoleServer(state=state, host=host, port=port)
     server.start_background()
     click.echo(f"console: http://{host}:{server.port}/?t={server.token}")
+    return state
 
 
-def _run_learn_serve(cfg) -> None:  # type: ignore[no-untyped-def]
-    """Transparent proxy with learning recorder. Full multiplexer in M1."""
-    click.echo("bawbel-gate: [learn] proxy started (M1 multiplexer wires this up)")
+def _run_learn_serve(cfg, console_state) -> None:  # type: ignore[no-untyped-def]
+    """Transparent proxy with learning recorder. See DESIGN.md 7.5, mux/proxy.py."""
+    from bawbel_gate.mux.proxy import run_learn
+    try:
+        run_learn(cfg, console_state=console_state)
+    except KeyboardInterrupt:
+        click.echo("bawbel-gate: stopped")
 
 
-def _run_enforce_serve(cfg) -> None:  # type: ignore[no-untyped-def]
-    """Full enforcement proxy. Wired up in M2."""
-    click.echo("bawbel-gate: [enforce] proxy started (M2 enforcement wires this up)")
+def _run_enforce_serve(cfg, console_state) -> None:  # type: ignore[no-untyped-def]
+    """Full enforcement proxy. See DESIGN.md 3.3, 5.2, mux/proxy.py."""
+    from bawbel_gate.mux.proxy import run_enforce
+    try:
+        run_enforce(cfg, console_state=console_state)
+    except KeyboardInterrupt:
+        click.echo("bawbel-gate: stopped")
 
 
 # ---------------------------------------------------------------------------
