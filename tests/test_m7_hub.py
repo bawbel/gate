@@ -332,6 +332,28 @@ class TestHubServer:
         finally:
             server.stop()
 
+    def test_fleet_console_page_via_query_token(self, tmp_path):
+        """Browsers can't set a header on plain navigation, so the fleet console
+        page is reached via ?t=<admin_token> instead (DESIGN.md 14.4)."""
+        base, admin_token, server = _start_hub(tmp_path)
+        try:
+            req = urllib.request.Request(f"{base}/?t={admin_token}")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                assert resp.status == 200
+                assert b"bawbel-hub" in resp.read()
+        finally:
+            server.stop()
+
+    def test_fleet_console_page_requires_valid_token(self, tmp_path):
+        base, admin_token, server = _start_hub(tmp_path)
+        try:
+            req = urllib.request.Request(f"{base}/?t=wrong-token")
+            with pytest.raises(urllib.error.HTTPError) as exc_info:
+                urllib.request.urlopen(req, timeout=5)
+            assert exc_info.value.code == 401
+        finally:
+            server.stop()
+
     def test_fleet_state_requires_auth(self, tmp_path):
         base, admin_token, server = _start_hub(tmp_path)
         try:
