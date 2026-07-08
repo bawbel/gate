@@ -25,6 +25,14 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from bawbel_gate._const import (
+    CONSOLE_DEFAULT_HOST,
+    CONSOLE_DEFAULT_PORT,
+    HTTP_POLL_INTERVAL_S,
+    HTTP_SERVER_POLL_S,
+    HTTP_SHUTDOWN_TIMEOUT_S,
+    SSE_HEARTBEAT_INTERVAL_S,
+)
 from bawbel_gate.console.auth import mint_token, verify_token
 from bawbel_gate.console.approvals import ApprovalDecision, ApprovalRegistry
 from bawbel_gate.console.state import ConsoleState, serialize_state
@@ -186,10 +194,11 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         # Stream existing records first, then wait for new ones.
         audit_log: Path = self.server_state.audit_log
         last_pos = 0
-        heartbeat_interval = 15.0
+        heartbeat_interval = SSE_HEARTBEAT_INTERVAL_S
         last_heartbeat = 0.0
 
         try:
+            import time as _time
             while True:
                 if audit_log.exists():
                     with audit_log.open(encoding="utf-8") as fh:
@@ -209,16 +218,13 @@ class _Handler(http.server.BaseHTTPRequestHandler):
                             self.wfile.flush()
                         last_pos = fh.tell()
 
-                now = threading.get_ident()  # dummy; just track time
-                import time
-                now = time.monotonic()
+                now = _time.monotonic()
                 if now - last_heartbeat >= heartbeat_interval:
                     self.wfile.write(b": heartbeat\n\n")
                     self.wfile.flush()
                     last_heartbeat = now
 
-                import time as _time
-                _time.sleep(0.5)
+                _time.sleep(HTTP_POLL_INTERVAL_S)
         except (BrokenPipeError, ConnectionResetError):
             pass
 
@@ -229,15 +235,15 @@ class ConsoleServer:
     def __init__(
         self,
         state: ConsoleState,
-        host: str = "127.0.0.1",
-        port: int = 7317,
+        host: str = CONSOLE_DEFAULT_HOST,
+        port: int = CONSOLE_DEFAULT_PORT,
     ) -> None:
         self.token = mint_token()
         self._state = state
         self._approvals = ApprovalRegistry()
         # Port 0 lets the OS pick a free port (useful in tests).
         self._httpd = http.server.HTTPServer((host, port), _Handler)
-        self._httpd.timeout = 0.5
+        self._httpd.timeout = HTTP_SERVER_POLL_S
 
         # Inject server-level state into handler instances via class attributes.
         handler_cls = self._httpd.RequestHandlerClass
@@ -264,4 +270,4 @@ class ConsoleServer:
     def stop(self) -> None:
         self._httpd.shutdown()
         if self._thread:
-            self._thread.join(timeout=2)
+            self._thread.join(timeout=HTTP_SHUTDOWN_TIMEOUT_S)

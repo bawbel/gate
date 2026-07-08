@@ -8,6 +8,13 @@ from pathlib import Path
 
 import click
 
+from bawbel_gate._const import (
+    CONSOLE_DEFAULT_HOST,
+    CONSOLE_DEFAULT_PORT,
+    HUB_DEFAULT_HOST,
+    HUB_DEFAULT_PORT,
+)
+
 
 
 @click.group()
@@ -25,8 +32,12 @@ def main() -> None:
               help="Path to gate.yaml.")
 @click.option("--learn", "learn_mode", is_flag=True, default=False,
               help="Observe-only mode: enforce nothing, record everything.")
-@click.option("--console", "console_addr", default=None, metavar="HOST:PORT",
-              help="Start the embedded console API on this address (default: 127.0.0.1:7317).")
+@click.option(
+    "--console", "console_addr", default=None, metavar="HOST:PORT",
+    envvar="BAWBEL_CONSOLE_ADDR",
+    help=f"Start the embedded console on HOST:PORT. Env: BAWBEL_CONSOLE_ADDR. "
+         f"Default: {CONSOLE_DEFAULT_HOST}:{CONSOLE_DEFAULT_PORT}.",
+)
 def serve(config: Path, learn_mode: bool, console_addr: str | None) -> None:
     """Start the gate proxy (or in learning mode, a transparent recorder)."""
     from bawbel_gate.mux.config import load_config, ConfigError
@@ -58,7 +69,7 @@ def _start_console_server(addr: str) -> None:
         port = int(port_str)
     else:
         host = addr
-        port = 7317
+        port = CONSOLE_DEFAULT_PORT
 
     state = ConsoleState(
         sessions={},
@@ -366,7 +377,8 @@ def harden(
     default="bawbel-audit.jsonl",
     type=click.Path(path_type=Path),
     show_default=True,
-    help="Audit log file to analyse.",
+    envvar="BAWBEL_AUDIT_LOG",
+    help="Audit log file to analyse. Env: BAWBEL_AUDIT_LOG.",
 )
 @click.option("--json", "as_json", is_flag=True, default=False,
               help="Emit report as JSON instead of human-readable text.")
@@ -426,10 +438,19 @@ def hub_group() -> None:
 
 
 @hub_group.command("serve")
-@click.option("--db", default="bawbel-hub.db", type=click.Path(path_type=Path),
-              show_default=True, help="SQLite database path (use ':memory:' for testing).")
-@click.option("--port", default=8443, show_default=True, help="Port to listen on.")
-@click.option("--host", default="127.0.0.1", show_default=True, help="Host to bind.")
+@click.option(
+    "--db", default="bawbel-hub.db", type=click.Path(path_type=Path),
+    show_default=True, envvar="BAWBEL_HUB_DB",
+    help="SQLite database path (use ':memory:' for testing). Env: BAWBEL_HUB_DB.",
+)
+@click.option(
+    "--port", default=HUB_DEFAULT_PORT, show_default=True,
+    envvar="BAWBEL_HUB_PORT", help="Port to listen on. Env: BAWBEL_HUB_PORT.",
+)
+@click.option(
+    "--host", default=HUB_DEFAULT_HOST, show_default=True,
+    envvar="BAWBEL_HUB_HOST", help="Host to bind. Env: BAWBEL_HUB_HOST.",
+)
 def hub_serve(db: Path, port: int, host: str) -> None:
     """Start the bawbel-hub ingest + fleet console server. See DESIGN.md 14."""
     from bawbel_gate.hub.store import FleetStore
@@ -453,8 +474,11 @@ def hub_serve(db: Path, port: int, host: str) -> None:
 
 @hub_group.command("token")
 @click.argument("action", type=click.Choice(["new"]))
-@click.option("--db", default="bawbel-hub.db", type=click.Path(path_type=Path),
-              show_default=True)
+@click.option(
+    "--db", default="bawbel-hub.db", type=click.Path(path_type=Path),
+    show_default=True, envvar="BAWBEL_HUB_DB",
+    help="SQLite database path. Env: BAWBEL_HUB_DB.",
+)
 def hub_token(action: str, db: Path) -> None:
     """Mint a new single-use enrollment token. Usage: hub token new."""
     from bawbel_gate.hub.enroll import EnrollmentRegistry

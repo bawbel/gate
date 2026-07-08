@@ -20,6 +20,12 @@ import threading
 from dataclasses import asdict
 from typing import Any
 
+from bawbel_gate._const import (
+    HUB_DEFAULT_HOST,
+    HUB_DEFAULT_PORT,
+    HTTP_SERVER_POLL_S,
+    HTTP_SHUTDOWN_TIMEOUT_S,
+)
 from bawbel_gate.hub.enroll import EnrollmentRegistry, EnrollmentError
 from bawbel_gate.hub.fleet import compute_fleet_posture
 from bawbel_gate.hub.ingest import process_batch, ChainMismatch
@@ -148,15 +154,15 @@ class HubServer:
         self,
         store: FleetStore,
         enroll: EnrollmentRegistry,
-        host: str = "127.0.0.1",
-        port: int = 8443,
+        host: str = HUB_DEFAULT_HOST,
+        port: int = HUB_DEFAULT_PORT,
     ) -> None:
         self._store = store
         self._enroll = enroll
         admin_token = enroll.mint_admin_token()
 
         self._httpd = http.server.HTTPServer((host, port), _HubHandler)
-        self._httpd.timeout = 0.5
+        self._httpd.timeout = HTTP_SERVER_POLL_S
 
         handler_cls = self._httpd.RequestHandlerClass
         handler_cls.hub_store = store
@@ -183,4 +189,4 @@ class HubServer:
     def stop(self) -> None:
         self._httpd.shutdown()
         if self._thread:
-            self._thread.join(timeout=2)
+            self._thread.join(timeout=HTTP_SHUTDOWN_TIMEOUT_S)
