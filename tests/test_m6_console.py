@@ -293,6 +293,37 @@ class TestConsoleServer:
         finally:
             server.stop()
 
+    def test_state_is_reachable_while_sse_connection_is_open(self, tmp_path):
+        """Regression: HTTPServer handles one request at a time, so a single long-lived
+        /v1/events (SSE) connection would starve every other request -- including the
+        page and /v1/state -- until it closed. ConsoleServer must use a threading
+        server so /v1/events does not block the rest of the API."""
+        import threading
+        base, token, server = _start_console(tmp_path)
+        sse_connected = threading.Event()
+        try:
+            def hold_sse():
+                req = urllib.request.Request(
+                    f"{base}/v1/events",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    sse_connected.set()
+                    resp.read(1)  # block reading from the open stream briefly
+
+            t = threading.Thread(target=hold_sse, daemon=True)
+            t.start()
+            assert sse_connected.wait(timeout=3), "SSE connection never opened"
+
+            req = urllib.request.Request(
+                f"{base}/v1/state",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                assert resp.status == 200
+        finally:
+            server.stop()
+
     def test_unknown_path_returns_404(self, tmp_path):
         base, token, server = _start_console(tmp_path)
         try:

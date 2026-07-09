@@ -140,10 +140,6 @@ push audit records to the hub; the hub never connects inward.
 - Fleet posture API: `GET /v1/fleet/state` returns per-gate allow/approve/deny
   counts, trifecta trips, and drift events.
 
-Enrollment plus a pushed audit chain, aggregated into fleet posture:
-
-![bawbel-gate hub: serve, mint an enrollment token, enroll a gate, and query /v1/fleet/state showing per-gate allow/deny counts](./docs/images/hub.png)
-
 ## Install (development)
 
 ```bash
@@ -197,9 +193,7 @@ bawbel-gate harden --ave AVE-2026-00041 --manifest manifests/github-mcp.cap.yaml
 ```
 
 `harden` merges the AVE record's mitigation stanza into your manifest and prints the
-diff before writing anything (drop `--write` to preview only):
-
-![bawbel-gate harden output: a diff adding taint_rules and integrity_watch entries from AVE-2026-00041](./docs/images/harden.png)
+diff before writing anything (drop `--write` to preview only).
 
 Pin tool schemas after review:
 
