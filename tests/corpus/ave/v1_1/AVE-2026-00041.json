@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.1",
+  "id": "AVE-2026-00041",
+  "title": "Tool Schema Poisoning via Substituted Server Card",
+  "description": "An attacker replaces a legitimate MCP server card with a modified version that injects malicious instructions into tool descriptions. Tool descriptions enter the model context verbatim at grant time, enabling instruction injection without touching the user prompt or operator system prompt.",
+  "aivss": {
+    "version": "0.8",
+    "base_score": 8.1,
+    "vector": "AI:0.8/AV:N/AC:L/UI:N/PR:N/APC:H/AI:H/TC:U/SC:H"
+  },
+  "triage": {
+    "status": "reviewed"
+  },
+  "mitigation": {
+    "strategy": ["pin_integrity", "deny_by_default"],
+    "enforcement_point": "server_card_fetch",
+    "trifecta_control": "break_untrusted_content"
+  }
+}

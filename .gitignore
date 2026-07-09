@@ -1,0 +1,14 @@
+IMPLEMENTATION_PLAN.md
+BAWBEL_GATE_MITIGATIONS_SPEC.md
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.hypothesis/
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+*.db
+*.audit.jsonl

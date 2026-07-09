@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bawbel-gate"
+version = "0.1.0"
+description = "Runtime enforcement proxy for MCP agents: capability manifests, session taint, trifecta invariant, hash-chained audit"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+dependencies = [
+    "jsonschema>=4.21",
+    "pyyaml>=6.0",
+    "click>=8.1",
+    "anyio>=4.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "hypothesis>=6.100",
+    "pre-commit>=3.7",
+    "ruff>=0.4",
+    "bandit[toml]>=1.7",
+    "pytest-anyio>=0.0.0",
+]
+ops = [
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.20",
+]
+
+[project.scripts]
+bawbel-gate = "bawbel_gate.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bawbel_gate"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "schemas/", "tests/", "scripts/"]
+
+# --- ruff -----------------------------------------------------------
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+preview = true
+select = ["E501", "E221", "E251", "E231", "F401", "F541", "F811", "SIM105", "SIM102"]
+
+# --- bandit ---------------------------------------------------------
+[tool.bandit]
+skips = []
+
+# --- pytest ---------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
