@@ -60,7 +60,7 @@ check for merge conflicts................................................Passed
 pytest
 ```
 
-Expected: `324 passed`
+Expected: `327 passed`
 
 ---
 
@@ -506,7 +506,7 @@ Before merging any PR:
 
 ```bash
 pre-commit run --all-files          # must be clean
-pytest                              # 324 passed
+pytest                              # 327 passed
 pytest tests/property/ -x          # hypothesis invariants
 pytest tests/replay/                # attack replays
 ```

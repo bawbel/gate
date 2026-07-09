@@ -3,8 +3,12 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
 [![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
-[![Tests](https://img.shields.io/badge/tests-324%20passing-brightgreen)](#install-development)
+[![Tests](https://img.shields.io/badge/tests-327%20passing-brightgreen)](#install-development)
 [![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](./DESIGN.md)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/bawbel/gate/badge)](https://scorecard.dev/viewer/?uri=github.com/bawbel/gate)
+[![Security Policy](https://img.shields.io/badge/security-policy-blue)](./SECURITY.md)
+[![Contributor Covenant](https://img.shields.io/badge/code_of_conduct-2.1-blueviolet)](./CODE_OF_CONDUCT.md)
+[![DCO](https://img.shields.io/badge/DCO-required-lightgrey)](./CONTRIBUTING.md#pull-requests)
 
 Runtime enforcement for MCP agents: capability manifests, session taint tracking, and
 a non-configurable rule-of-two trifecta invariant, with a hash-chained audit log.
@@ -12,7 +16,7 @@ a non-configurable rule-of-two trifecta invariant, with a hash-chained audit log
 ## Status: v1.0 feature-complete (pre-release)
 
 The full enforcement core, integrity layer, operations stack, embedded console, and
-fleet hub are implemented. 324 tests pass. The public API is stable; the release
+fleet hub are implemented. 327 tests pass. The public API is stable; the release
 package is not yet on PyPI.
 
 ## The problem
@@ -146,7 +150,7 @@ push audit records to the hub; the hub never connects inward.
 git clone https://github.com/chaksaray/bawbel-gate
 cd bawbel-gate
 pip install -e ".[dev]" --break-system-packages
-pytest                        # 324 tests
+pytest                        # 327 tests
 pre-commit run --all-files    # lint gate
 ```
 
@@ -310,4 +314,7 @@ more than one gate) is the paid tier; see DESIGN.md 14 for the boundary.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md). Read DESIGN.md before opening a PR that
 touches `policy/`, `taint/`, `audit/`, or `integrity/`: behavior that diverges from
-the spec needs a DESIGN.md change first, not a larger diff.
+the spec needs a DESIGN.md change first, not a larger diff. Commits must carry a
+DCO sign-off (`git commit -s`); see [GOVERNANCE.md](./GOVERNANCE.md) for who
+decides what, and [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for how we treat
+each other while doing it.
