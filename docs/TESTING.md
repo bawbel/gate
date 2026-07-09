@@ -60,7 +60,7 @@ check for merge conflicts................................................Passed
 pytest
 ```
 
-Expected: `315 passed`
+Expected: `324 passed`
 
 ---
 
@@ -305,7 +305,7 @@ grants:
 bawbel-gate lint manifests/ --schema capability-manifest/v1
 ```
 
-Expected: no output (clean).
+Expected: `ok   github-mcp.cap.yaml` (one line per clean manifest).
 
 ### 6d. Pin tool schemas after review
 
@@ -317,8 +317,10 @@ bawbel-gate verify tools.json manifests/github-mcp.cap.yaml --accept
 Expected:
 
 ```
-pinned: manifests/github-mcp.cap.yaml  (hash written to tool_schema_pin)
+pinned: sha256:<hash>
 ```
+
+(written to the manifest's `tool_schema_integrity` field)
 
 ### 6e. Start in learning mode
 
@@ -346,10 +348,17 @@ bawbel-gate: enforcement mode active
 console: http://127.0.0.1:7317/?t=<token>
 ```
 
-Open the URL in a browser. The console shows:
+Open the URL in a browser (or `curl -H "Authorization: Bearer <token>" .../v1/state`).
+The console shows:
 - Live session state and taint flags
-- Streaming audit events via SSE
-- Pending approvals (when a trifecta trip fires)
+- Streaming audit events via SSE (`/v1/events`)
+- Per-server manifest hashes and trifecta flags
+
+Approval requests currently go through the terminal channel only (`gate.yaml`'s
+`approval.channel: terminal`); the console's `/v1/approvals/{id}` endpoint exists and
+is unit-tested, but the request loop does not yet route trifecta-triggered approvals
+through it, so the console's pending-approvals list stays empty. Wiring that up is
+tracked as follow-up work, not implemented in `mux/proxy.py` yet.
 
 ### 6g. View posture report
 
@@ -364,7 +373,7 @@ bawbel-gate posture --audit-log gate.audit.jsonl --json
 bawbel-gate audit verify gate.audit.jsonl
 ```
 
-Expected: `chain ok  N records verified`
+Expected: `ok: N records, chain intact`
 
 Tamper test — corrupt one byte and re-verify:
 
@@ -376,7 +385,7 @@ open('gate.audit.jsonl.bad', 'wb').write(data[:200] + b'X' + data[201:])
 bawbel-gate audit verify gate.audit.jsonl.bad
 ```
 
-Expected: `chain error at record <N>: hash mismatch`
+Expected: `FAIL: seq <N>: hash mismatch`
 
 ---
 
@@ -497,7 +506,7 @@ Before merging any PR:
 
 ```bash
 pre-commit run --all-files          # must be clean
-pytest                              # 315 passed
+pytest                              # 324 passed
 pytest tests/property/ -x          # hypothesis invariants
 pytest tests/replay/                # attack replays
 ```

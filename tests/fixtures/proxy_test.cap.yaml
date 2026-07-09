@@ -1,0 +1,22 @@
+schema: bawbel/capability-manifest/v1
+subject:
+  kind: mcp-server
+  name: files
+  transport: stdio
+
+provenance_class: tool.response.files
+instruction_authority: none
+
+trifecta:
+  private_data: true
+  untrusted_content: true
+  external_comms: true
+
+grants:
+  tools:
+    - name: get_file
+      effect: allow
+    - name: send_email
+      effect: approve
+    - name: "*"
+      effect: deny

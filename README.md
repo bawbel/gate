@@ -1,12 +1,18 @@
 # bawbel-gate
 
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
+[![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
+[![Tests](https://img.shields.io/badge/tests-324%20passing-brightgreen)](#install-development)
+[![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](./DESIGN.md)
+
 Runtime enforcement for MCP agents: capability manifests, session taint tracking, and
 a non-configurable rule-of-two trifecta invariant, with a hash-chained audit log.
 
 ## Status: v1.0 feature-complete (pre-release)
 
 The full enforcement core, integrity layer, operations stack, embedded console, and
-fleet hub are implemented. 315 tests pass. The public API is stable; the release
+fleet hub are implemented. 324 tests pass. The public API is stable; the release
 package is not yet on PyPI.
 
 ## The problem
@@ -18,6 +24,36 @@ fixable at the model layer. bawbel-gate fixes the consequence layer instead: a
 deterministic proxy between the agent host and its MCP servers that enforces
 per-component capability grants, session taint, and the trifecta invariant,
 regardless of what the model decides to do.
+
+## How it works
+
+```mermaid
+flowchart LR
+    Host["Agent Host<br/>(LLM + user)"] -->|"MCP tool call<br/>(JSON-RPC)"| Gate
+
+    subgraph Gate["bawbel-gate"]
+        direction TB
+        Manifest["1. Capability manifest<br/>match grant by tool name"]
+        Taint["2. Session taint<br/>private data / untrusted content seen"]
+        Trifecta["3. Trifecta invariant<br/>rule of two, not configurable"]
+        Manifest --> Taint --> Trifecta
+    end
+
+    Trifecta -->|allow| Server[("MCP Server")]
+    Trifecta -->|approve| Human[["Human approval"]]
+    Human -->|granted| Server
+    Trifecta -->|deny| Blocked["Blocked + logged"]
+
+    Gate --> Audit[("Hash-chained<br/>audit log")]
+    Audit -.push only.-> Hub[["bawbel-hub<br/>(optional fleet)"]]
+```
+
+Every tool call from the agent host passes through three checks before it ever
+reaches a real MCP server: does a capability grant match this tool, has this
+session's taint state crossed the rule-of-two threshold, and does the trifecta
+invariant require a human in the loop. Every decision, allowed or not, is written
+to an append-only hash-chained audit log. The gate never reads model output to make
+these decisions -- only structured JSON-RPC.
 
 ## What is built
 
@@ -84,6 +120,11 @@ random bearer token is printed once at startup. Endpoints:
 The console is read-only except for the approval endpoint. No endpoint can issue
 tool calls, edit manifests, or clear taint; those remain CLI-only.
 
+`/v1/state` reflects live session taint and per-server manifest state as the gate
+runs:
+
+![bawbel-gate serve --console startup and a live /v1/state snapshot showing session taint, server trifecta flags, and audit head](./docs/images/console.png)
+
 ### bawbel-hub (M7)
 
 Self-hosted fleet manager for teams running more than one gate. Push-only: gates
@@ -105,7 +146,7 @@ push audit records to the hub; the hub never connects inward.
 git clone https://github.com/chaksaray/bawbel-gate
 cd bawbel-gate
 pip install -e ".[dev]" --break-system-packages
-pytest                        # 315 tests
+pytest                        # 324 tests
 pre-commit run --all-files    # lint gate
 ```
 
@@ -150,6 +191,9 @@ Harden a manifest against a known attack pattern:
 ```bash
 bawbel-gate harden --ave AVE-2026-00041 --manifest manifests/github-mcp.cap.yaml --write
 ```
+
+`harden` merges the AVE record's mitigation stanza into your manifest and prints the
+diff before writing anything (drop `--write` to preview only).
 
 Pin tool schemas after review:
 
