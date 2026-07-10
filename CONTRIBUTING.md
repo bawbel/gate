@@ -3,6 +3,10 @@
 DESIGN.md is normative. This file is the workflow for changing code without
 violating it.
 
+Participation in this project is governed by our
+[Code of Conduct](./CODE_OF_CONDUCT.md). See [GOVERNANCE.md](./GOVERNANCE.md) for
+who decides what and how DESIGN.md changes get approved.
+
 ## Before you start
 
 1. Read [DESIGN.md](./DESIGN.md) for the section your change touches (map in
