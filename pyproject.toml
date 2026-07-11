@@ -16,10 +16,25 @@ authors = [
 keywords = [
     "mcp",
     "model-context-protocol",
+    "mcp-server",
+    "mcp-proxy",
     "agent-security",
+    "ai-agents",
+    "agentic-ai",
+    "llm-security",
+    "llm",
     "security",
     "policy-enforcement",
+    "policy-engine",
     "prompt-injection",
+    "tool-calling",
+    "capability-based-security",
+    "taint-tracking",
+    "audit-log",
+    "supply-chain-security",
+    "zero-trust",
+    "sandboxing",
+    "runtime-security",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -74,7 +89,13 @@ packages = ["src/bawbel_gate"]
 "schemas" = "bawbel_gate/schemas"
 
 [tool.hatch.build.targets.sdist]
-include = ["src/", "schemas/", "tests/", "scripts/", "mitigations/"]
+# only-include is a strict allowlist (unlike include/exclude, which only filter
+# hatchling's default "everything not gitignored" set). Without it, untracked
+# working-tree cruft not covered by .gitignore -- .agents/, .claude/, editor
+# state -- ends up in the sdist. Doc-only files (DESIGN.md, ARCHITECTURE.md,
+# etc.) are deliberately left out too: they matter to the repo, not to a
+# package install, and cost real tarball size.
+only-include = ["src/", "schemas/", "tests/", "scripts/", "mitigations/"]
 
 # --- ruff -----------------------------------------------------------
 [tool.ruff]
