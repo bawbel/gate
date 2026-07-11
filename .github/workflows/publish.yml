@@ -44,10 +44,35 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-  publish:
-    name: Publish to PyPI
+  publish-testpypi:
+    name: Publish to TestPyPI (automatic)
     needs: [build]
     runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/bawbel-gate/
+    permissions:
+      id-token: write  # mandatory for trusted publishing; no API token stored
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  publish-pypi:
+    name: Publish to PyPI (production, manual approval)
+    needs: [publish-testpypi]
+    runs-on: ubuntu-latest
+    # The "pypi" environment must have a required-reviewers protection rule
+    # configured in repo Settings -> Environments. That is what actually makes
+    # this job pause for manual approval; nothing in this file does. See
+    # CONTRIBUTING.md / the release checklist for the one-time setup.
     environment:
       name: pypi
       url: https://pypi.org/project/bawbel-gate/
