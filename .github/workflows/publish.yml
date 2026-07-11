@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    name: Test before publish
+    name: Verify Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
         run: pre-commit run --all-files
 
   build:
-    name: Build distribution
+    name: Build Distribution
     needs: [test]
     runs-on: ubuntu-latest
     steps:
@@ -45,7 +45,7 @@ jobs:
           path: dist/
 
   publish-testpypi:
-    name: Publish to TestPyPI (automatic)
+    name: Publish to TestPyPI
     needs: [build]
     runs-on: ubuntu-latest
     environment:
@@ -66,7 +66,7 @@ jobs:
           skip-existing: true
 
   publish-pypi:
-    name: Publish to PyPI (production, manual approval)
+    name: Publish to PyPI
     needs: [publish-testpypi]
     runs-on: ubuntu-latest
     # The "pypi" environment must have a required-reviewers protection rule
