@@ -6,14 +6,61 @@ build-backend = "hatchling.build"
 name = "bawbel-gate"
 version = "0.1.0"
 description = "Runtime enforcement proxy for MCP agents: capability manifests, session taint, trifecta invariant, hash-chained audit"
+readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Chak Saray", email = "chaksaray@gmail.com" },
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "mcp-proxy",
+    "agent-security",
+    "ai-agents",
+    "agentic-ai",
+    "llm-security",
+    "llm",
+    "security",
+    "policy-enforcement",
+    "policy-engine",
+    "prompt-injection",
+    "tool-calling",
+    "capability-based-security",
+    "taint-tracking",
+    "audit-log",
+    "supply-chain-security",
+    "zero-trust",
+    "sandboxing",
+    "runtime-security",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "jsonschema>=4.21",
     "pyyaml>=6.0",
     "click>=8.1",
     "anyio>=4.3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bawbel/gate"
+Repository = "https://github.com/bawbel/gate"
+Documentation = "https://github.com/bawbel/gate/blob/main/DESIGN.md"
+"Bug Tracker" = "https://github.com/bawbel/gate/issues"
+"Security Policy" = "https://github.com/bawbel/gate/blob/main/SECURITY.md"
 
 [project.optional-dependencies]
 dev = [
@@ -35,8 +82,20 @@ bawbel-gate = "bawbel_gate.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/bawbel_gate"]
 
+[tool.hatch.build.targets.wheel.force-include]
+# Bundle the vendored schemas into the wheel itself (see _schemas.py) so a
+# real `pip install bawbel-gate` has them; a plain `packages` entry only
+# ships src/bawbel_gate, and schemas/ lives at the repo root, not under it.
+"schemas" = "bawbel_gate/schemas"
+
 [tool.hatch.build.targets.sdist]
-include = ["src/", "schemas/", "tests/", "scripts/"]
+# only-include is a strict allowlist (unlike include/exclude, which only filter
+# hatchling's default "everything not gitignored" set). Without it, untracked
+# working-tree cruft not covered by .gitignore -- .agents/, .claude/, editor
+# state -- ends up in the sdist. Doc-only files (DESIGN.md, ARCHITECTURE.md,
+# etc.) are deliberately left out too: they matter to the repo, not to a
+# package install, and cost real tarball size.
+only-include = ["src/", "schemas/", "tests/", "scripts/", "mitigations/"]
 
 # --- ruff -----------------------------------------------------------
 [tool.ruff]
