@@ -318,3 +318,28 @@ class TestAveMitigationsSchema:
         }
         errors = list(_validator(ave_mitigations_schema).iter_errors(doc))
         assert errors, "invalid rule_id format must be rejected"
+
+
+# ---------------------------------------------------------------------------
+# Schema directory resolution (packaged wheel vs. source checkout)
+# ---------------------------------------------------------------------------
+
+class TestSchemaDirResolution:
+    """A pip-installed wheel bundles schemas/ inside the package (see
+    pyproject.toml [tool.hatch.build.targets.wheel.force-include]); an editable
+    checkout has it at the repo root instead. _resolve_schema_dir must prefer
+    whichever one actually exists on disk, packaged first."""
+
+    def test_prefers_packaged_dir_when_it_exists(self, tmp_path):
+        from bawbel_gate._schemas import _resolve_schema_dir
+        packaged = tmp_path / "packaged" / "schemas"
+        packaged.mkdir(parents=True)
+        repo_root = tmp_path / "repo_root" / "schemas"  # deliberately not created
+        assert _resolve_schema_dir(packaged, repo_root) == packaged
+
+    def test_falls_back_to_repo_root_when_packaged_dir_missing(self, tmp_path):
+        from bawbel_gate._schemas import _resolve_schema_dir
+        packaged = tmp_path / "packaged" / "schemas"  # deliberately not created
+        repo_root = tmp_path / "repo_root" / "schemas"
+        repo_root.mkdir(parents=True)
+        assert _resolve_schema_dir(packaged, repo_root) == repo_root
