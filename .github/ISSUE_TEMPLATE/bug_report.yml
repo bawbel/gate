@@ -1,0 +1,86 @@
+name: Bug report
+description: Behavior that differs from DESIGN.md, a crash, or a wrong reason string.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the bug lets a call resolve to a more permissive effect than DESIGN.md 5
+        specifies, it is a vulnerability. Stop here and report it per SECURITY.md.
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: Disclosure
+      options:
+        - label: This report does not demonstrate a bypass listed in SECURITY.md scope.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: >-
+        policy, taint, audit, and integrity changes require a property test
+        committed before the implementation (CONTRIBUTING.md).
+      multiple: true
+      options:
+        - policy
+        - taint
+        - audit
+        - integrity
+        - mux
+        - learn
+        - ops
+        - console
+        - hub
+        - ingest
+        - cli
+        - docs
+        - packaging
+        - ci
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `bawbel-gate --version`, or the commit SHA for a source install.
+    validations:
+      required: true
+
+  - type: input
+    id: design-section
+    attributes:
+      label: DESIGN.md section
+      description: The section that specifies the expected behavior, e.g. `5.2 step 3`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Exact commands, manifest, and call sequence. Redact secrets.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: Effect, reason string, exit code, or output DESIGN.md specifies.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: Output, traceback, or the audit record for the call.
+      render: text
+    validations:
+      required: true

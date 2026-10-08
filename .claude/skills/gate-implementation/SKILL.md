@@ -10,15 +10,21 @@ discipline for implementing it without violating its security properties.
 
 ## Workflow (always, in order)
 
-1. Read the DESIGN.md section for the component (map in CLAUDE.md). Do not code from
+1. If no issue exists yet for this change, open one first (CONTRIBUTING.md
+   "Issue before PR").
+2. Read the DESIGN.md section for the component (map in CLAUDE.md). Do not code from
    memory of the spec.
-2. Check `references/invariants.md` for invariants touching your change. If any
-   apply, write or extend the property test FIRST, watch it fail, then implement.
-3. Implement in the smallest diff that satisfies spec + tests.
-4. Run `pytest tests/property/ -x`, then the full suite, then
+3. Check `references/invariants.md` for invariants touching your change. If any
+   apply, write or extend the property test FIRST, watch it fail, and commit it on
+   its own before the implementation (CONTRIBUTING.md "Property test before
+   implementation").
+4. Implement in the smallest diff that satisfies spec + tests.
+5. Run `pytest tests/property/ -x`, then the full suite, then
    `pre-commit run --all-files`.
-5. If behavior differs from DESIGN.md in any way: stop, propose the DESIGN.md change,
+6. If behavior differs from DESIGN.md in any way: stop, propose the DESIGN.md change,
    do not ship the divergence.
+7. Open the PR referencing the issue (`Closes #N`). Do not open a PR with no linked
+   issue.
 
 ## The five things that make a diff wrong even when tests pass
 
