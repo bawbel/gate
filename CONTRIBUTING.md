@@ -18,7 +18,31 @@ who decides what and how DESIGN.md changes get approved.
    `.claude/skills/gate-implementation/references/invariants.md`. Every invariant
    listed there (I1-I8) has a property test; your change must keep them green or
    explain, in the PR description, exactly which invariant your change redefines
-   and why.
+   and why. The property test is written and committed before the
+   implementation; see [Property test before implementation](#property-test-before-implementation).
+
+## Issue before PR
+
+Every change starts as an issue, not a PR. Exempt: typo or doc wording fixes under
+5 lines, and dependency bumps opened by Dependabot.
+
+1. Open the issue with one of the forms under `.github/ISSUE_TEMPLATE/`. Each form
+   records the area the change touches.
+
+   | Form | Use for |
+   |---|---|
+   | Bug report | behavior that differs from DESIGN.md, a crash, a wrong reason string |
+   | Feature request | additive work inside behavior DESIGN.md already specifies |
+   | Design change | anything that adds to or changes DESIGN.md |
+
+2. If the change diverges from DESIGN.md, use the Design change form and name the
+   section. Per "Before you start", that DESIGN.md PR merges first, on its own.
+3. The PR body starts with `Closes #N`, or `Refs #N` when the PR is one of several
+   against the same issue. A PR with no linked issue gets asked to open one before
+   review starts. This applies to the maintainer's own PRs too (GOVERNANCE.md).
+
+Blank issues are disabled. A security bypass never goes in an issue; see
+[SECURITY.md](./SECURITY.md).
 
 ## Setup
 
@@ -85,18 +109,38 @@ else it accomplishes.
 | A class of attack the change newly blocks | one file in `tests/replay/` asserting the specific layer that blocks it |
 | Anything user-facing (CLI, error strings, manifest fields) | doc update in the same PR (README, DESIGN.md, or the FAQ) |
 
+### Property test before implementation
+
+Applies to any change under `policy/`, `taint/`, `audit/`, or `integrity/`.
+
+1. Commit the property test on its own. When the change adds or fixes behavior,
+   the test fails at that commit.
+2. Commit the implementation after it, in one or more separate commits.
+3. Do not squash the branch, before review or at merge. The order has to stay
+   visible in `git log --oneline <base>..HEAD`, and the PR template's invariant
+   ordering block cites both SHAs.
+
+If the property test passes at its own commit (for example, a refactor that
+preserves behavior), say so in the PR and explain why.
+
 ## Pull requests
 
-- Small diffs. If a change needs a DESIGN.md update, that is a separate PR that
-  merges first.
+- Linked to an issue per "Issue before PR". Fill in
+  `.github/PULL_REQUEST_TEMPLATE.md`.
+- Small diffs. A behavior change is two PRs: a DESIGN.md PR containing no code,
+  merged alone first, then the implementation PR stating
+  `Implements DESIGN.md <N> (merged in #<M>)`.
 - Description states: what changed, why, which DESIGN.md section governs it, and
   which tests prove it.
-- CI must be green: full suite, property tests, replay tests, pre-commit, and the
-  approval-budget corpus check (a change that adds approval prompts on the benign
-  workload corpus is a regression, not a feature).
-- Sign your commits: `git commit -s`. We use the Developer Certificate of Origin
-  (DCO); the sign-off is your statement that you have the right to submit the
-  contribution under this project's license.
+- Required before merge: full suite, property tests, replay tests, pre-commit, and
+  the approval-budget corpus check (`pytest tests/test_m4_corpus.py`). A change
+  that adds approval prompts on the benign workload corpus is a regression, not a
+  feature. CI runs code, dependency, and secret scans; it does not run the test
+  suite yet, so paste the results into the PR template's Verification block.
+- Every commit carries a DCO sign-off: `git commit -s`. The sign-off is your
+  statement, under the Developer Certificate of Origin, that you have the right to
+  submit the contribution under this project's license. PRs with unsigned commits
+  are not merged.
 
 ## Reporting a vulnerability
 

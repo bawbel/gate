@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/bawbel/gate/security/advisories/new
+    about: >-
+      An effect resolving more permissively than DESIGN.md specifies, a trifecta
+      bypass, or an undetected audit chain gap. Report privately per SECURITY.md,
+      never in a public issue.

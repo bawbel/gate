@@ -1,0 +1,97 @@
+name: Design change
+description: A change to DESIGN.md. Merges alone, before any implementation PR.
+title: "design: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        DESIGN.md is normative (GOVERNANCE.md). The PR for this issue contains
+        DESIGN.md and docs/proposals/ changes only, no code. Implementation is a
+        separate issue that depends on this one.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: >-
+        policy, taint, audit, and integrity changes require a property test
+        committed before the implementation (CONTRIBUTING.md).
+      multiple: true
+      options:
+        - policy
+        - taint
+        - audit
+        - integrity
+        - mux
+        - learn
+        - ops
+        - console
+        - hub
+        - ingest
+        - cli
+        - docs
+        - packaging
+        - ci
+    validations:
+      required: true
+
+  - type: input
+    id: sections
+    attributes:
+      label: DESIGN.md sections
+      description: Sections added or amended, e.g. `15 (new)`, `5.2 step 3`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What the current spec does not answer, or answers wrongly. Name the caller.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed specification
+      description: Outline per subsection. Schemas, CLI shape, failure modes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocking-questions
+    attributes:
+      label: Blocking questions
+      description: >-
+        Numbered. Each needs a normative answer in the PR body before the PR merges.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Invariants
+      description: Check each that holds. Any unchecked box needs an explanation below.
+      options:
+        - label: "Effects only move down the lattice. No new raising path (I2, I5)."
+        - label: The trifecta invariant applies unchanged and stays non-configurable (I4).
+        - label: Every new failure mode resolves to `deny` (I1, I8).
+        - label: Enforcement reads structured JSON-RPC only. No model output is consulted.
+        - label: Hashed or pinned data goes through `audit/canonical.py` (I6, I7).
+
+  - type: textarea
+    id: invariant-impact
+    attributes:
+      label: Invariant impact
+      description: >-
+        Name any invariant in `.claude/skills/gate-implementation/references/invariants.md`
+        this proposal redefines, and why. Write `none` if none.
+    validations:
+      required: true
+
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
