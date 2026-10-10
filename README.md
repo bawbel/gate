@@ -6,6 +6,9 @@
 [![Tests](https://img.shields.io/badge/tests-327%20passing-brightgreen)](#install-development)
 [![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](./DESIGN.md)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/bawbel/gate/badge)](https://scorecard.dev/viewer/?uri=github.com/bawbel/gate)
+[![Code Scan](https://github.com/bawbel/gate/actions/workflows/code-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/code-scan.yml)
+[![Dependency Scan](https://github.com/bawbel/gate/actions/workflows/dependency-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/dependency-scan.yml)
+[![Secret Scan](https://github.com/bawbel/gate/actions/workflows/secret-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/secret-scan.yml)
 [![Security Policy](https://img.shields.io/badge/security-policy-blue)](./SECURITY.md)
 [![Contributor Covenant](https://img.shields.io/badge/code_of_conduct-2.1-blueviolet)](./CODE_OF_CONDUCT.md)
 [![DCO](https://img.shields.io/badge/DCO-required-lightgrey)](./CONTRIBUTING.md#pull-requests)
@@ -176,6 +179,28 @@ Point your MCP client at the gate instead of your servers directly:
 }
 ```
 
+`gate.yaml` holds the upstream server definitions plus one manifest path per server
+(see DESIGN.md 3.1 for the full annotated version):
+
+```yaml
+schema: bawbel/gate-config/v1
+audit_log: /var/log/bawbel/gate.audit.jsonl
+approval:
+  channel: terminal          # terminal | webhook | slack
+  webhook_url: null
+  timeout_seconds: 120
+  on_timeout: deny
+servers:
+  - name: github
+    command: github-mcp
+    args: []
+    manifest: /etc/bawbel/manifests/github-mcp.cap.yaml
+  - name: filesystem
+    command: fs-mcp
+    args: ["--root", "/work"]
+    manifest: /etc/bawbel/manifests/fs-mcp.cap.yaml
+```
+
 No manifests yet? Run learning mode first:
 
 ```bash
@@ -291,6 +316,7 @@ Six event classes emitted as structured records regardless of exporter:
 - [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) - milestone sequence.
 - [BAWBEL_GATE_MITIGATIONS_SPEC.md](./BAWBEL_GATE_MITIGATIONS_SPEC.md) - enforcement policy details.
 - [docs/LANGUAGE.md](./docs/LANGUAGE.md) - canonical terminology.
+- [CHANGELOG.md](./CHANGELOG.md) - notable changes since the M0-M7 baseline.
 
 ## Related projects
 

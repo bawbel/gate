@@ -1,0 +1,10 @@
+title = "bawbel-gate gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-fake credentials used as test fixtures for policy/manifest.py's own secret-scan detector, not real leaked secrets"
+paths = [
+  '''tests/test_m2_policy\.py''',
+]

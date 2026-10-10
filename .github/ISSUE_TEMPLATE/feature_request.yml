@@ -1,0 +1,70 @@
+name: Feature request
+description: Additive work inside behavior DESIGN.md already specifies.
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the change alters or adds behavior DESIGN.md does not specify, use the
+        Design change template instead. The DESIGN.md PR merges alone, first.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What cannot be done today. Name the caller or workflow.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Commands, flags, data structures. Examples over prose.
+    validations:
+      required: true
+
+  - type: input
+    id: design-section
+    attributes:
+      label: DESIGN.md section
+      description: The section that already specifies this behavior.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: >-
+        policy, taint, audit, and integrity changes require a property test
+        committed before the implementation (CONTRIBUTING.md).
+      multiple: true
+      options:
+        - policy
+        - taint
+        - audit
+        - integrity
+        - mux
+        - learn
+        - ops
+        - console
+        - hub
+        - ingest
+        - cli
+        - docs
+        - packaging
+        - ci
+    validations:
+      required: true
+
+  - type: textarea
+    id: approval-budget
+    attributes:
+      label: Approval budget impact
+      description: >-
+        Does this add approval prompts on the benign corpus (`tests/corpus/`)?
+        A change that does is a regression.
+    validations:
+      required: true

@@ -1,6 +1,7 @@
 """Schema loading utilities.
 
-All JSON Schemas live in the top-level schemas/ directory. Load them via
+All JSON Schemas live in the top-level schemas/ directory of the source repo
+(vendored from the ave repo; do not edit here, PR to ave). Load them via
 load_schema() rather than constructing paths or reading files inline.
 Override the directory at runtime with the BAWBEL_SCHEMAS_DIR env var.
 """
@@ -16,8 +17,22 @@ from bawbel_gate._const import (
     SCHEMA_FILE_CAPABILITY_MANIFEST,
 )
 
-# Two levels up from src/bawbel_gate/ -> repo root -> schemas/
-_DEFAULT_SCHEMA_DIR = Path(__file__).parent.parent.parent / "schemas"
+def _resolve_schema_dir(packaged: Path, repo_root: Path) -> Path:
+    """Pick the schema directory that actually exists on disk.
+
+    A pip-installed wheel bundles schemas/ inside the package itself (see
+    pyproject.toml [tool.hatch.build.targets.wheel.force-include]); an
+    editable/source checkout instead has schemas/ at the repo root, three
+    levels up from this file. Prefer the packaged copy when both could
+    resolve, since it is the one that actually ships with
+    `pip install bawbel-gate`.
+    """
+    return packaged if packaged.is_dir() else repo_root
+
+
+_PACKAGED_SCHEMA_DIR = Path(__file__).parent / "schemas"
+_REPO_ROOT_SCHEMA_DIR = Path(__file__).parent.parent.parent / "schemas"
+_DEFAULT_SCHEMA_DIR = _resolve_schema_dir(_PACKAGED_SCHEMA_DIR, _REPO_ROOT_SCHEMA_DIR)
 SCHEMAS_DIR = Path(os.environ.get("BAWBEL_SCHEMAS_DIR", _DEFAULT_SCHEMA_DIR))
 
 
