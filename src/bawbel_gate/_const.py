@@ -53,6 +53,7 @@ TRIFECTA_LEGS: tuple[str, ...] = (
 
 # --- JSON-RPC error codes (see DESIGN.md 6.2) ---
 JSONRPC_DENY_CODE = -32031
+JSONRPC_METHOD_NOT_FOUND = -32601  # JSON-RPC 2.0 section 5.1; see DESIGN.md 3.3
 
 # --- Deny reasons: closed set (see DESIGN.md 6.2, docs/LANGUAGE.md) ---
 REASON_NO_GRANT = "no_grant"
