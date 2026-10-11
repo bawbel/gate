@@ -11,6 +11,16 @@ itemized here; this file picks up from that baseline.
 
 ## [Unreleased]
 
+### Added
+
+- `Changelog` project URL in package metadata.
+
+### Fixed
+
+- README links, the console image, and in-page anchors were relative, so none
+  of them resolved on the PyPI project page, which renders README.md. They are
+  now absolute GitHub URLs, and the #27 and #28 references are links.
+
 ## [0.1.0] - 2026-10-11
 
 First release on PyPI: `pip install bawbel-gate`.
