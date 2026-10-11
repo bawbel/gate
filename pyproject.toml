@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bawbel-gate"
-version = "0.1.0"
+version = "0.1.1"
 description = "Runtime enforcement proxy for MCP agents: capability manifests, session taint, trifecta invariant, hash-chained audit"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -61,6 +61,7 @@ Repository = "https://github.com/bawbel/gate"
 Documentation = "https://github.com/bawbel/gate/blob/main/DESIGN.md"
 "Bug Tracker" = "https://github.com/bawbel/gate/issues"
 "Security Policy" = "https://github.com/bawbel/gate/blob/main/SECURITY.md"
+"Changelog" = "https://github.com/bawbel/gate/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
