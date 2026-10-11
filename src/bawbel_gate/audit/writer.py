@@ -1,7 +1,8 @@
 """Hash-chained audit log writer and chain verifier.
 
 Record format and chain invariant per DESIGN.md 8.6 and invariants I6, I7.
-Each record: hash = sha256(canonical_bytes(record_without_hash) || prev_hash_bytes).
+Each record: hash = sha256(canonical_bytes(record_without_hash) || utf8(prev)), where
+record_without_hash keeps prev. Not RFC 8785; see docs/adr/0001.
 """
 
 from __future__ import annotations
