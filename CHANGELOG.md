@@ -11,6 +11,10 @@ itemized here; this file picks up from that baseline.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-12
+
+README and metadata fixes for the PyPI project page. No code changes.
+
 ### Added
 
 - `Changelog` project URL in package metadata.
@@ -76,5 +80,6 @@ First release on PyPI: `pip install bawbel-gate`.
   ruleset: required signed commits, required PR review) hygiene that was
   previously either aspirational or entirely absent.
 
-[Unreleased]: https://github.com/bawbel/gate/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/bawbel/gate/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/bawbel/gate/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/bawbel/gate/releases/tag/v0.1.0
