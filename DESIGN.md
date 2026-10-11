@@ -152,6 +152,43 @@ the payload is hashed, the server's `provenance_class` is recorded into session 
 taint flags update, and the audit record is appended. The response body itself is not
 modified in v1 (no inline provenance markers; the host would ignore them anyway).
 
+**MCP surface.** The gate implements three MCP methods. Everything else is rejected or
+dropped at the gate, never forwarded unexamined. Enforce and learning mode share this
+surface.
+
+Host to gate:
+
+| Message | Handling |
+|---|---|
+| `initialize` | Answered by the gate. Advertises `capabilities: {"tools": {}}` only. |
+| `tools/list` | Answered from the merged, filtered list built at `VERIFY` (3.2, 6.2). |
+| `tools/call` | Decision pipeline (6.2), then forward and tag as above. |
+| Any other request: `resources/*`, `prompts/*`, `completion/complete`, `logging/setLevel`, `ping` | JSON-RPC `-32601`. Not forwarded. |
+| Notification (no `id`) | Dropped. Not forwarded, not answered. |
+
+Gate to upstream: `initialize` and `tools/list` during `VERIFY`, then `tools/call` for
+calls that resolve to `allow` or to a granted `approve`. The only other messages the
+gate sends upstream are the refusals below.
+
+Upstream to gate: after each request, the gate reads until the response whose `id`
+matches the request in value and type.
+
+| Message | Handling |
+|---|---|
+| Response to the gate's `tools/call` | Tagged as above, then returned to the host. |
+| Response to the gate's `initialize` or `tools/list` | Consumed by `VERIFY`. Tool entries reach the host only through the merged list (3.2). |
+| Notification | Dropped. |
+| Server-to-client request: `sampling/createMessage`, `roots/list`, `elicitation/create` | Answered upstream with `-32601`. Not forwarded to the host. |
+| Response to an `id` the gate did not send, or a non-object message | Dropped, stderr warning. |
+
+Upstream content therefore reaches the host by two paths only: a `tools/call` result,
+which passes the provenance tagger, and tool descriptions in the merged `tools/list`,
+which are not tagged and are covered by `tool_schema_integrity` pinning (8.1, T3) only
+when the manifest declares a pin. `resources/read` and `prompts/get` return
+attacker-controllable content (T1, 2.1) and are not proxied in v1. A release that
+proxies any content-bearing method passes its response through the provenance tagger
+before returning it.
+
 ## 4. Capability manifest
 
 One manifest per component. Authored in YAML, validated against the JSON Schema in 4.2.
