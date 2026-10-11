@@ -96,7 +96,9 @@ will be updated at the 1.0 release.
 
 | Version | Supported |
 |---|---|
-| main (pre-release) | yes, best effort |
+| Latest release (0.1.x) | yes |
+| Earlier releases | no; upgrade to the latest release |
+| `main`, `develop` (unreleased) | best effort |
 
 ## CVE assignment
 

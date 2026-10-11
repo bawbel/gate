@@ -1,4 +1,4 @@
-# bawbel-gate — Complete Testing Guide
+# bawbel-gate: Complete Testing Guide
 
 Step-by-step from a clean checkout to a verified running system.
 Every command is copy-paste ready. Expected output is shown inline.
@@ -60,7 +60,7 @@ check for merge conflicts................................................Passed
 pytest
 ```
 
-Expected: `327 passed`
+Expected: every test passes (`N passed`, no failures or errors).
 
 ---
 
@@ -150,7 +150,7 @@ Key assertions:
 
 ---
 
-### 5f. Replay tests — scripted attack patterns
+### 5f. Replay tests: scripted attack patterns
 
 These replay real attack chains and assert each enforcement layer independently.
 
@@ -375,7 +375,7 @@ bawbel-gate audit verify gate.audit.jsonl
 
 Expected: `ok: N records, chain intact`
 
-Tamper test — corrupt one byte and re-verify:
+Tamper test: corrupt one byte and re-verify:
 
 ```bash
 python3 -c "
@@ -469,7 +469,7 @@ event classes (`gate.drift.detected`, `gate.trifecta.trip`, `gate.deny.burst`,
 `gate.secretscan.hit`, `gate.approval.timeout`, `gate.chain.gap`) are emitted as
 structured events on those spans.
 
-Without `opentelemetry-sdk` installed the gate runs identically — all OTel calls
+Without `opentelemetry-sdk` installed the gate runs identically; all OTel calls
 are no-ops. Verify:
 
 ```bash
@@ -495,7 +495,7 @@ All defaults work without any env vars set. Override for containers or CI:
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | _(none)_ | OTel collector endpoint |
 
 Set these in your shell profile, process manager (systemd, supervisor), or container
-runtime (`ENV` in Dockerfile, `env:` in Kubernetes). Do not use `.env` files — they
+runtime (`ENV` in Dockerfile, `env:` in Kubernetes). Do not use `.env` files; they
 are readable by subprocesses and are not appropriate for a security product.
 
 ---
@@ -506,7 +506,7 @@ Before merging any PR:
 
 ```bash
 pre-commit run --all-files          # must be clean
-pytest                              # 327 passed
+pytest                              # all pass
 pytest tests/property/ -x          # hypothesis invariants
 pytest tests/replay/                # attack replays
 ```

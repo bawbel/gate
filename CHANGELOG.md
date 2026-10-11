@@ -18,12 +18,21 @@ README and metadata fixes for the PyPI project page. No code changes.
 ### Added
 
 - `Changelog` project URL in package metadata.
+- `docs/ACS_CONFORMANCE.md`, `docs/ACS_GATE_MAPPING.md`, and
+  `docs/THREAT_MODEL.md` (#45).
 
 ### Fixed
 
 - README links, the console image, and in-page anchors were relative, so none
   of them resolved on the PyPI project page, which renders README.md. They are
   now absolute GitHub URLs, and the #27 and #28 references are links.
+- README statements the code does not back (#46): CEF/syslog export, alert
+  events emitted without OTel, gate-side push to the hub, Postgres, hub
+  quarantine and `gate.chain.gap`, the deny reasons table, and "feature-complete"
+  and "public API is stable" in Status (now "alpha (0.1.x)").
+- SECURITY.md supported-versions table. README and docs/TESTING.md no longer
+  hard-code a test count.
+- Removed the `sandboxing` package keyword: the gate is not a sandbox.
 
 ## [0.1.0] - 2026-10-11
 
