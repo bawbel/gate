@@ -10,7 +10,6 @@ and never forwards on deny -- code that did not exist before mux/proxy.py.
 
 from __future__ import annotations
 
-import io
 import json
 import sys
 from pathlib import Path
@@ -22,7 +21,7 @@ from bawbel_gate._const import (
 from bawbel_gate.audit.writer import verify_chain
 from bawbel_gate.console.state import ConsoleState
 from bawbel_gate.mux.config import ApprovalConfig, GateConfig, ServerConfig
-from bawbel_gate.mux.proxy import run_enforce
+from tests.proxy_harness import run_enforce_session
 
 FIXTURES = Path(__file__).parent / "fixtures"
 FAKE_SERVER = FIXTURES / "fake_mcp_server.py"
@@ -41,20 +40,10 @@ def _cfg(audit_log: Path, timeout_seconds: int = 5) -> GateConfig:
 
 
 def _run(cfg: GateConfig, messages: list[dict], *, console_state=None, approval_input_fn=None):
-    host_in = io.StringIO("".join(json.dumps(m) + "\n" for m in messages))
-    host_out = io.StringIO()
-    run_enforce(
-        cfg,
-        console_state=console_state,
-        host_in=host_in,
-        host_out=host_out,
-        approval_input_fn=approval_input_fn,
+    sent = run_enforce_session(
+        cfg, messages, console_state=console_state, approval_input_fn=approval_input_fn,
     )
-    responses = {}
-    for line in host_out.getvalue().splitlines():
-        obj = json.loads(line)
-        responses[obj["id"]] = obj
-    return responses
+    return {obj["id"]: obj for obj in sent}
 
 
 class TestToolsListMergeAndNamespacing:
