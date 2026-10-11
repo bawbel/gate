@@ -1,5 +1,11 @@
 # bawbel-gate
 
+Runtime enforcement for MCP agents. A deterministic proxy between the agent host and its
+MCP servers that enforces capability manifests, session taint, and a non-configurable
+rule-of-two trifecta invariant, with a hash-chained audit log.
+
+The gate never reads model output. Every decision is made on structured JSON-RPC.
+
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
 [![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
@@ -13,11 +19,7 @@
 [![Contributor Covenant](https://img.shields.io/badge/code_of_conduct-2.1-blueviolet)](./CODE_OF_CONDUCT.md)
 [![DCO](https://img.shields.io/badge/DCO-required-lightgrey)](./CONTRIBUTING.md#pull-requests)
 
-Runtime enforcement for MCP agents. A deterministic proxy between the agent host and its
-MCP servers that enforces capability manifests, session taint, and a non-configurable
-rule-of-two trifecta invariant, with a hash-chained audit log.
-
-The gate never reads model output. Every decision is made on structured JSON-RPC.
+[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
 
 ```bash
 # not on PyPI yet
@@ -31,8 +33,6 @@ bawbel-gate serve --config gate.yaml                 # enforce
 `serve` is launched by your MCP client, not run by hand. Before the first `serve`, write
 `gate.yaml` and one manifest per server. [Usage](#usage) walks through each step and lists
 what is not supported yet; [Commands](#commands) lists every command and option.
-
-[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
 
 ## Status: v1.0 feature-complete (pre-release)
 
@@ -331,8 +331,15 @@ Remove `--learn` from the client args. In each session:
    forwarded. A denied call is not forwarded and returns:
 
    ```json
-   {"jsonrpc": "2.0", "id": 7, "error": {"code": -32031, "message": "bawbel-gate: denied",
-    "data": {"reason": "condition_failed", "ave": []}}}
+   {
+     "jsonrpc": "2.0",
+     "id": 7,
+     "error": {
+       "code": -32031,
+       "message": "bawbel-gate: denied",
+       "data": {"reason": "condition_failed", "ave": []}
+     }
+   }
    ```
 
    `data.reason` is one of the [deny reasons](#deny-reasons), except that a deny produced
