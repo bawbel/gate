@@ -26,7 +26,7 @@ what is not supported yet; [Commands](#commands) lists every command and option.
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
 [![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
-[![Tests](https://img.shields.io/badge/tests-329%20passing-brightgreen)](#install-development)
+[![Tests](https://img.shields.io/badge/tests-337%20passing-brightgreen)](#install-development)
 [![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](./DESIGN.md)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/bawbel/gate/badge)](https://scorecard.dev/viewer/?uri=github.com/bawbel/gate)
 [![Code Scan](https://github.com/bawbel/gate/actions/workflows/code-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/code-scan.yml)
@@ -36,13 +36,31 @@ what is not supported yet; [Commands](#commands) lists every command and option.
 [![Contributor Covenant](https://img.shields.io/badge/code_of_conduct-2.1-blueviolet)](./CODE_OF_CONDUCT.md)
 [![DCO](https://img.shields.io/badge/DCO-required-lightgrey)](./CONTRIBUTING.md#pull-requests)
 
-### Status: v1.0 feature-complete (pre-release)
+Runtime enforcement for MCP agents. A deterministic proxy between the agent host and its
+MCP servers that enforces capability manifests, session taint, and a non-configurable
+rule-of-two trifecta invariant, with a hash-chained audit log.
+
+The gate never reads model output. Every decision is made on structured JSON-RPC.
+
+```bash
+pip install "git+https://github.com/bawbel/gate.git@develop"   # not on PyPI yet
+
+bawbel-gate serve --config gate.yaml --learn          # observe, enforce nothing
+bawbel-gate learn synthesize --out manifests/draft/   # draft manifests from what you saw
+bawbel-gate serve --config gate.yaml                  # enforce
+```
+
+`serve` is launched by your MCP client, not run by hand. Before the first `serve`, write
+`gate.yaml` and one manifest per server. [Usage](#usage) walks through each step and lists
+what is not supported yet; [Commands](#commands) lists every command and option.
+
+[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
+
+## Status: v1.0 feature-complete (pre-release)
 
 The full enforcement core, integrity layer, operations stack, embedded console, and
-fleet hub are implemented. 329 tests pass. The public API is stable; the release
+fleet hub are implemented. 337 tests pass. The public API is stable; the release
 package is not yet on PyPI.
-
-</details>
 
 ## How it works
 
@@ -128,7 +146,7 @@ git clone https://github.com/bawbel/gate.git
 cd gate
 git checkout develop
 pip install -e ".[dev]" --break-system-packages
-pytest                        # 329 tests
+pytest                        # 337 tests
 pre-commit run --all-files    # lint gate
 ```
 
@@ -368,7 +386,7 @@ the session, which ends when the client disconnects.
   SDK reject that handshake, and the gate then exposes none of their tools.
 - MCP methods other than `initialize`, `tools/list`, and `tools/call`. They return
   `-32601`, and the gate advertises only the `tools` capability, so resources and prompts
-  are not reachable through the gate.
+  are not reachable through the gate (DESIGN.md 3.3).
 - Transports other than stdio, on either side of the gate.
 - Clean stdout. The mode banner and the console URL with its token are written to stdout,
   the JSON-RPC channel, and clients log them as parse errors.
