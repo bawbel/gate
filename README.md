@@ -6,23 +6,6 @@ rule-of-two trifecta invariant, with a hash-chained audit log.
 
 The gate never reads model output. Every decision is made on structured JSON-RPC.
 
-```bash
-pip install "git+https://github.com/bawbel/gate.git@develop"   # not on PyPI yet
-
-bawbel-gate serve --config gate.yaml --learn          # observe, enforce nothing
-bawbel-gate learn synthesize --out manifests/draft/   # draft manifests from what you saw
-bawbel-gate serve --config gate.yaml                  # enforce
-```
-
-`serve` is launched by your MCP client, not run by hand. Before the first `serve`, write
-`gate.yaml` and one manifest per server. [Usage](#usage) walks through each step and lists
-what is not supported yet; [Commands](#commands) lists every command and option.
-
-[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
-
-<details>
-<summary>Badges and project status</summary>
-
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
 [![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
@@ -36,25 +19,20 @@ what is not supported yet; [Commands](#commands) lists every command and option.
 [![Contributor Covenant](https://img.shields.io/badge/code_of_conduct-2.1-blueviolet)](./CODE_OF_CONDUCT.md)
 [![DCO](https://img.shields.io/badge/DCO-required-lightgrey)](./CONTRIBUTING.md#pull-requests)
 
-Runtime enforcement for MCP agents. A deterministic proxy between the agent host and its
-MCP servers that enforces capability manifests, session taint, and a non-configurable
-rule-of-two trifecta invariant, with a hash-chained audit log.
-
-The gate never reads model output. Every decision is made on structured JSON-RPC.
+[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
 
 ```bash
-pip install "git+https://github.com/bawbel/gate.git@develop"   # not on PyPI yet
+# not on PyPI yet
+pip install "git+https://github.com/bawbel/gate.git@develop"
 
-bawbel-gate serve --config gate.yaml --learn          # observe, enforce nothing
-bawbel-gate learn synthesize --out manifests/draft/   # draft manifests from what you saw
-bawbel-gate serve --config gate.yaml                  # enforce
+bawbel-gate serve --config gate.yaml --learn         # observe, enforce nothing
+bawbel-gate learn synthesize --out manifests/draft/  # draft manifests
+bawbel-gate serve --config gate.yaml                 # enforce
 ```
 
 `serve` is launched by your MCP client, not run by hand. Before the first `serve`, write
 `gate.yaml` and one manifest per server. [Usage](#usage) walks through each step and lists
 what is not supported yet; [Commands](#commands) lists every command and option.
-
-[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
 
 ## Status: v1.0 feature-complete (pre-release)
 
@@ -153,8 +131,9 @@ pre-commit run --all-files    # lint gate
 ### 1. Write gate.yaml
 
 ```yaml
-schema: bawbel/gate-config/v1                      # exact string, required
-audit_log: /home/you/.bawbel/gate.audit.jsonl      # absolute; the directory must exist
+schema: bawbel/gate-config/v1    # exact string, required
+# absolute path; the directory must already exist
+audit_log: /home/you/.bawbel/gate.audit.jsonl
 approval:
   channel: terminal          # see "Approvals" in step 6
   timeout_seconds: 120       # 5 to 3600
@@ -219,14 +198,17 @@ grants:
 
 Observations are appended to `learn.observations.jsonl` in the gate process's working
 directory when the session ends. `serve` has no option to move that file, so start the
-gate from a known directory:
+gate from a known directory (`serve -c` is short for `serve --config`):
 
 ```json
 {
   "mcpServers": {
     "bawbel-gate": {
       "command": "sh",
-      "args": ["-c", "cd /home/you/.bawbel && exec bawbel-gate serve --config gate.yaml --learn"]
+      "args": [
+        "-c",
+        "cd /home/you/.bawbel && exec bawbel-gate serve -c gate.yaml --learn"
+      ]
     }
   }
 }
@@ -239,8 +221,8 @@ text. Treat it as sensitive and delete it after synthesis.
 
 ```bash
 cd /home/you/.bawbel
-bawbel-gate learn report                              # tools used per server, argument shapes
-bawbel-gate learn synthesize --out manifests/draft/   # one <server>.cap.yaml per server
+bawbel-gate learn report                             # tools and argument shapes
+bawbel-gate learn synthesize --out manifests/draft/  # a draft per server
 ```
 
 `synthesize` overwrites an existing `<server>.cap.yaml` in the output directory. Write to a
@@ -289,7 +271,8 @@ Lint is a static check. It runs in CI without starting any server:
 
 ```bash
 bawbel-gate lint manifests/
-bawbel-gate lint manifests/prod --forbid-effect allow --tools-with external_comms
+bawbel-gate lint manifests/prod \
+  --forbid-effect allow --tools-with external_comms
 ```
 
 The second command fails if any manifest that declares `external_comms: true` contains an
@@ -300,14 +283,19 @@ Pin each server's tool schema after reviewing its tool descriptions. `verify` ta
 `result.tools` array of the server's `tools/list` response:
 
 ```bash
-printf '%s\n' \
-  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"pin","version":"0"}}}' \
-  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-  | github-mcp | jq -c 'select(.id == 2) | .result.tools' > github-tools.json
+{
+  jq -nc '{jsonrpc: "2.0", id: 1, method: "initialize",
+           params: {protocolVersion: "2025-06-18", capabilities: {},
+                    clientInfo: {name: "pin", version: "0"}}}'
+  jq -nc '{jsonrpc: "2.0", method: "notifications/initialized"}'
+  jq -nc '{jsonrpc: "2.0", id: 2, method: "tools/list"}'
+} | github-mcp \
+  | jq -c 'select(.id == 2) | .result.tools' > github-tools.json
 
-bawbel-gate verify github-tools.json manifests/github-mcp.cap.yaml            # compare
-bawbel-gate verify github-tools.json manifests/github-mcp.cap.yaml --accept   # write the pin
+# compare with the stored pin
+bawbel-gate verify github-tools.json manifests/github-mcp.cap.yaml
+# write the pin
+bawbel-gate verify github-tools.json manifests/github-mcp.cap.yaml --accept
 ```
 
 `--accept` stores the hash in the manifest's `tool_schema_integrity` field and rewrites the
@@ -318,8 +306,12 @@ calls to it are denied with `drift:suspended`.
 Merge an AVE record's mitigation stanza into a manifest:
 
 ```bash
-bawbel-gate harden --ave AVE-2026-00041 --manifest manifests/github-mcp.cap.yaml           # diff only
-bawbel-gate harden --ave AVE-2026-00041 --manifest manifests/github-mcp.cap.yaml --write   # apply
+# print the diff only
+bawbel-gate harden --ave AVE-2026-00041 \
+  --manifest manifests/github-mcp.cap.yaml
+# apply it
+bawbel-gate harden --ave AVE-2026-00041 \
+  --manifest manifests/github-mcp.cap.yaml --write
 ```
 
 `harden` reads `mitigations/ave-mitigations.json` relative to the current directory. That
@@ -339,8 +331,15 @@ Remove `--learn` from the client args. In each session:
    forwarded. A denied call is not forwarded and returns:
 
    ```json
-   {"jsonrpc": "2.0", "id": 7, "error": {"code": -32031, "message": "bawbel-gate: denied",
-    "data": {"reason": "condition_failed", "ave": []}}}
+   {
+     "jsonrpc": "2.0",
+     "id": 7,
+     "error": {
+       "code": -32031,
+       "message": "bawbel-gate: denied",
+       "data": {"reason": "condition_failed", "ave": []}
+     }
+   }
    ```
 
    `data.reason` is one of the [deny reasons](#deny-reasons), except that a deny produced
