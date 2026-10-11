@@ -39,6 +39,7 @@ from bawbel_gate._const import (
     EVENT_DRIFT_DETECTED,
     EVENT_SESSION_END,
     EVENT_SESSION_START,
+    JSONRPC_METHOD_NOT_FOUND,
     REASON_DRIFT_SUSPENDED,
     REASON_NO_GRANT,
     TRIFECTA_PRIVATE_DATA,
@@ -52,7 +53,7 @@ from bawbel_gate.learn.recorder import LearnRecorder
 from bawbel_gate.mux.config import GateConfig
 from bawbel_gate.mux.namespace import from_namespaced, to_namespaced
 from bawbel_gate.mux.session import SessionState
-from bawbel_gate.mux.transport import read_messages, spawn_server, write_message
+from bawbel_gate.mux.transport import read_messages, spawn_server, warn, write_message
 from bawbel_gate.ops.otel import emit_alert_event, record_decision_span
 from bawbel_gate.policy.approval import request_approval
 from bawbel_gate.policy.engine import Decision, resolve
@@ -138,9 +139,13 @@ def _bootstrap(cfg: GateConfig, console_state: ConsoleState | None, *, enforce: 
         procs[server_cfg.name] = proc
         call_ids[server_cfg.name] = itertools.count(3)
 
-        _send_and_recv(proc, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
+        _send_and_recv(
+            proc, server_cfg.name,
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+        )
         tools_resp = _send_and_recv(
-            proc, {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
+            proc, server_cfg.name,
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
         )
         live_tools = tools_resp.get("result", {}).get("tools", [])
 
@@ -199,9 +204,43 @@ def _check_drift(
     })
 
 
-def _send_and_recv(proc: subprocess.Popen, message: dict) -> dict:
+def _send_and_recv(proc: subprocess.Popen, server: str, message: dict) -> dict:
+    """Send one request upstream and return the response whose id matches it.
+
+    Nothing else the server writes reaches the host (DESIGN.md 3.3): notifications
+    and responses to other ids are dropped, and server-to-client requests are refused.
+    """
     write_message(proc.stdin, message)
-    return next(read_messages(proc.stdout))
+    incoming = read_messages(proc.stdout)
+    while True:
+        upstream_message = next(incoming)
+        if _is_response_to(upstream_message, message["id"]):
+            return upstream_message
+        _refuse_unsolicited(proc, server, upstream_message)
+
+
+def _is_response_to(upstream_message, request_id) -> bool:
+    # JSON-RPC ids match by value and type; the type check keeps True from matching 1.
+    return (
+        isinstance(upstream_message, dict)
+        and "method" not in upstream_message
+        and type(upstream_message.get("id")) is type(request_id)
+        and upstream_message.get("id") == request_id
+    )
+
+
+def _refuse_unsolicited(proc: subprocess.Popen, server: str, upstream_message) -> None:
+    if not isinstance(upstream_message, dict):
+        warn(f"upstream {server}: dropped a non-object message")
+        return
+    method = upstream_message.get("method")
+    if method is None:
+        warn(f"upstream {server}: dropped a response to an id the gate did not send")
+        return
+    if "id" not in upstream_message:
+        return  # notification: dropped, never forwarded to the host
+    write_message(proc.stdin, _method_not_found(upstream_message["id"], method))
+    warn(f"upstream {server}: refused server-to-client request {str(method)[:64]!r}")
 
 
 def _shutdown(ctx: _ProxyContext) -> None:
@@ -303,7 +342,7 @@ def _forward_and_tag(request_id, server: str, bare_tool: str, args: dict, ctx: _
         "jsonrpc": "2.0", "id": upstream_id, "method": "tools/call",
         "params": {"name": bare_tool, "arguments": args},
     }
-    upstream_resp = _send_and_recv(proc, upstream_req)
+    upstream_resp = _send_and_recv(proc, server, upstream_req)
 
     manifest = ctx.manifests[server]
     ctx.session.add_taint(manifest.provenance_class)
@@ -368,7 +407,7 @@ def _initialize_result(request_id) -> dict:
 def _method_not_found(request_id, method: str) -> dict:
     return {
         "jsonrpc": "2.0", "id": request_id,
-        "error": {"code": -32601, "message": f"Method not found: {method}"},
+        "error": {"code": JSONRPC_METHOD_NOT_FOUND, "message": f"Method not found: {method}"},
     }
 
 

@@ -29,7 +29,7 @@ def read_messages(stream: IO[str]) -> Iterator[JsonRpcMessage]:
         try:
             yield json.loads(raw)
         except json.JSONDecodeError as exc:
-            _warn(f"{REASON_PARSE_ERROR}: {exc}")
+            warn(f"{REASON_PARSE_ERROR}: {exc}")
 
 
 def write_message(stream: IO[str], message: JsonRpcMessage) -> None:
@@ -60,5 +60,6 @@ def spawn_server(command: str, args: list[str]) -> subprocess.Popen:
     )
 
 
-def _warn(msg: str) -> None:
+def warn(msg: str) -> None:
+    """Write an operator warning to stderr. Never to stdout, the JSON-RPC channel."""
     print(f"bawbel-gate: warning: {msg}", file=sys.stderr, flush=True)
