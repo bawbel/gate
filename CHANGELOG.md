@@ -4,12 +4,16 @@ All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 [Semantic Versioning](https://semver.org/).
 
-No version has been tagged or released yet. The M0-M7 build (project scaffold
-through policy engine, integrity pinning, operations layer, embedded console,
-and bawbel-hub) is documented as milestones in README's "What is built" table
-rather than itemized here; this file picks up from that baseline.
+0.1.0 is the first release. The M0-M7 build (project scaffold through policy
+engine, integrity pinning, operations layer, embedded console, and bawbel-hub)
+is documented as milestones in README's "What is built" table rather than
+itemized here; this file picks up from that baseline.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-10-11
+
+First release on PyPI: `pip install bawbel-gate`.
 
 ### Added
 
@@ -30,9 +34,16 @@ rather than itemized here; this file picks up from that baseline.
   Gitleaks (secret-scan.yml). Repo-level secret scanning, push protection,
   and Dependabot security updates enabled.
 - OpenSSF Scorecard workflow and badge.
+- Issue forms, PR template, and CODEOWNERS; CONTRIBUTING.md requires an issue
+  before a PR and a property test committed before the implementation (#17).
 
 ### Fixed
 
+- The proxy returned whatever message an upstream wrote next as the response
+  to a `tools/call`. An upstream notification or server-to-client request
+  written first replaced the result and shifted every later result from that
+  server. Responses are now matched by `id`; upstream notifications are
+  dropped and server-to-client requests refused with `-32601` (#21).
 - `bawbel-hub`'s `/v1/enroll` required the admin bearer token an unenrolled
   gate doesn't have yet -- the single-use enrollment token is itself the
   credential (DESIGN.md 14.3). The documented enroll flow was unreachable.
@@ -54,3 +65,6 @@ rather than itemized here; this file picks up from that baseline.
 - Documented (`SECURITY.md`, `.gitleaks.toml`) and enforced (branch
   ruleset: required signed commits, required PR review) hygiene that was
   previously either aspirational or entirely absent.
+
+[Unreleased]: https://github.com/bawbel/gate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/bawbel/gate/releases/tag/v0.1.0

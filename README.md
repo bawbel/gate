@@ -7,6 +7,7 @@ rule-of-two trifecta invariant, with a hash-chained audit log.
 The gate never reads model output. Every decision is made on structured JSON-RPC.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/bawbel-gate)](https://pypi.org/project/bawbel-gate/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
 [![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
 [![Tests](https://img.shields.io/badge/tests-337%20passing-brightgreen)](#install-development)
@@ -22,8 +23,7 @@ The gate never reads model output. Every decision is made on structured JSON-RPC
 [Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
 
 ```bash
-# not on PyPI yet
-pip install "git+https://github.com/bawbel/gate.git@develop"
+pip install bawbel-gate
 
 bawbel-gate serve --config gate.yaml --learn         # observe, enforce nothing
 bawbel-gate learn synthesize --out manifests/draft/  # draft manifests
@@ -37,8 +37,8 @@ what is not supported yet; [Commands](#commands) lists every command and option.
 ## Status: v1.0 feature-complete (pre-release)
 
 The full enforcement core, integrity layer, operations stack, embedded console, and
-fleet hub are implemented. 337 tests pass. The public API is stable; the release
-package is not yet on PyPI.
+fleet hub are implemented. 337 tests pass. The public API is stable. The first package
+release, `0.1.0`, is on PyPI.
 
 ## How it works
 
@@ -103,18 +103,24 @@ upstream servers' tools reach the client as `{server}__{tool}`.
 
 ### Install
 
-Not yet published to PyPI. Install from the `develop` branch (Python 3.10 or later):
+From [PyPI](https://pypi.org/project/bawbel-gate/) (Python 3.10 or later):
 
 ```bash
-pip install "git+https://github.com/bawbel/gate.git@develop"
+pip install bawbel-gate
 bawbel-gate --version
 ```
 
 The `ops` extra adds the OpenTelemetry exporter. Without it, decision spans are no-ops.
 
 ```bash
-pip install "bawbel-gate[ops] @ git+https://github.com/bawbel/gate.git@develop"
+pip install "bawbel-gate[ops]"
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+```
+
+Unreleased changes on the `develop` branch:
+
+```bash
+pip install "git+https://github.com/bawbel/gate.git@develop"
 ```
 
 ### Install (development)
@@ -379,16 +385,15 @@ the session, which ends when the client disconnects.
 
 ### Not yet supported
 
-- A PyPI release.
 - Upstream servers that validate the MCP handshake. The gate sends `initialize` with empty
   `params` and no `notifications/initialized`. Servers built on the official MCP Python
-  SDK reject that handshake, and the gate then exposes none of their tools.
+  SDK reject that handshake, and the gate then exposes none of their tools (#27).
 - MCP methods other than `initialize`, `tools/list`, and `tools/call`. They return
   `-32601`, and the gate advertises only the `tools` capability, so resources and prompts
   are not reachable through the gate (DESIGN.md 3.3).
 - Transports other than stdio, on either side of the gate.
 - Clean stdout. The mode banner and the console URL with its token are written to stdout,
-  the JSON-RPC channel, and clients log them as parse errors.
+  the JSON-RPC channel, and clients log them as parse errors (#28).
 - Error responses for malformed JSON-RPC from the client. A line that is not JSON is
   dropped with a stderr warning: no response, no audit record.
 
