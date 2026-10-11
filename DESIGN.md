@@ -930,9 +930,16 @@ The concrete stanza source and `review_status` semantics are in
   provenance; manifest compilation to Cedar for a formally verified evaluator;
   transparency-log anchoring of audit chain heads.
 - **Open:** multi-agent delegation (does a subagent inherit the parent's taint set, or
-  fork it? current position: inherit, monotone); manifest signing identity (sigstore
-  keyless vs org PKI); whether `learn synthesize` should emit `trifecta` flags at all
-  or always defer to a curated server classification DB.
+  fork it? current position: inherit, monotone); manifest signing identity for
+  manifests that live only in an org's own repository (sigstore keyless vs org PKI);
+  whether `learn synthesize` should emit `trifecta` flags at all or always defer to a
+  curated server classification DB.
+- **Proposed:** manifest signing identity for manifests distributed through
+  bawbel-registry (bawbel-registry `docs/adr/0002-signing-identity.md`). The registry
+  signs one index with sigstore keyless signing from a gated GitHub Actions workflow;
+  each entry pins a manifest by SHA-256, so a listed manifest is covered by the index
+  signature. Self-hosted and air-gapped registries use a pinned public key instead. How
+  gate consumes the index is not yet specified.
 
 ## 13. Telemetry and Console API
 
