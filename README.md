@@ -48,14 +48,14 @@ package is not yet on PyPI.
 
 ```mermaid
 flowchart TD
-    HOST["Agent host<br/><small>JSON-RPC tools/call</small>"]
-    M["Capability manifest<br/><small>DESIGN.md 5.2 steps 1-4:<br/>grant match, conditions, argument guards</small>"]
-    T["Session taint<br/><small>5.2 step 5: taint rules, lattice_min</small>"]
-    TRI["Trifecta invariant<br/><small>5.2 step 6: third leg forces at least approve.<br/>Not configurable</small>"]
-    A["Allow<br/><small>call reaches the server</small>"]
-    AP["Approve<br/><small>human approval, timeout denies</small>"]
-    D["Deny<br/><small>JSON-RPC error -32031 with the deny reason</small>"]
-    AUD[("Hash-chained audit log<br/><small>every decision, append only</small>")]
+    HOST["Agent host<br/>JSON-RPC tools/call"]
+    M["Capability manifest<br/>DESIGN.md 5.2 steps 1-4:<br/>grant match, conditions,<br/>argument guards"]
+    T["Session taint<br/>5.2 step 5: taint rules,<br/>lattice_min"]
+    TRI["Trifecta invariant<br/>5.2 step 6: third leg<br/>forces at least approve.<br/>Not configurable"]
+    A["Allow<br/>call reaches the server"]
+    AP["Approve<br/>human approval,<br/>timeout denies"]
+    D["Deny<br/>JSON-RPC error -32031<br/>with the deny reason"]
+    AUD[("Hash-chained audit log<br/>every decision,<br/>append only")]
     SRV[("MCP servers")]
 
     HOST --> M --> T --> TRI
