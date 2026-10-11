@@ -35,32 +35,47 @@ regardless of what the model decides to do.
 ## How it works
 
 ```mermaid
-flowchart LR
-    Host["Agent Host<br/>(LLM + user)"] -->|"MCP tool call<br/>(JSON-RPC)"| Gate
+flowchart TD
+    HOST["Agent host<br/>JSON-RPC tools/call"]
+    M["Capability manifest<br/>DESIGN.md 5.2 steps 1-4:<br/>grant match, conditions,<br/>argument guards"]
+    T["Session taint<br/>5.2 step 5: taint rules,<br/>lattice_min"]
+    TRI["Trifecta invariant<br/>5.2 step 6: third leg<br/>forces at least approve.<br/>Not configurable"]
+    A["Allow<br/>call reaches the server"]
+    AP["Approve<br/>human approval,<br/>timeout denies"]
+    D["Deny<br/>JSON-RPC error -32031<br/>with the deny reason"]
+    AUD[("Hash-chained audit log<br/>every decision,<br/>append only")]
+    SRV[("MCP servers")]
 
-    subgraph Gate["bawbel-gate"]
-        direction TB
-        Manifest["1. Capability manifest<br/>match grant by tool name"]
-        Taint["2. Session taint<br/>private data / untrusted content seen"]
-        Trifecta["3. Trifecta invariant<br/>rule of two, not configurable"]
-        Manifest --> Taint --> Trifecta
-    end
+    HOST --> M --> T --> TRI
+    M -->|"no grant, failed condition, guard hit"| D
+    TRI --> A
+    TRI --> AP
+    TRI --> D
+    AP -->|granted| A
+    AP -->|"denied or timeout"| D
+    A --> SRV
+    A --> AUD
+    AP --> AUD
+    D --> AUD
 
-    Trifecta -->|allow| Server[("MCP Server")]
-    Trifecta -->|approve| Human[["Human approval"]]
-    Human -->|granted| Server
-    Trifecta -->|deny| Blocked["Blocked + logged"]
-
-    Gate --> Audit[("Hash-chained<br/>audit log")]
-    Audit -.push only.-> Hub[["bawbel-hub<br/>(optional fleet)"]]
+    classDef check fill:#EEEDFE,stroke:#534AB7,color:#26215C
+    classDef ok fill:#E1F5EE,stroke:#0F6E56,color:#04342C
+    classDef warn fill:#FAEEDA,stroke:#854F0B,color:#412402
+    classDef bad fill:#FCEBEB,stroke:#A32D2D,color:#501313
+    class M,T,TRI check
+    class A ok
+    class AP warn
+    class D bad
 ```
 
-Every tool call from the agent host passes through three checks before it ever
-reaches a real MCP server: does a capability grant match this tool, has this
-session's taint state crossed the rule-of-two threshold, and does the trifecta
-invariant require a human in the loop. Every decision, allowed or not, is written
-to an append-only hash-chained audit log. The gate never reads model output to make
-these decisions -- only structured JSON-RPC.
+Every `tools/call` passes three checks, in order. The capability manifest check covers
+DESIGN.md 5.2 steps 1 to 4: absence of a grant is a deny, and a failed condition or an
+argument guard hit is a deny, never a fallthrough to the next grant. Taint rules and the
+trifecta invariant can only move an effect down the lattice (`allow` to `approve` to
+`deny`), never up, so the manifest's base grants are a static ceiling on what a session
+can do. The trifecta step is not configurable: no manifest field, environment variable,
+or flag disables it. Every decision is appended to the hash-chained audit log, and no
+decision reads model output, only structured JSON-RPC.
 
 ## What is built
 
