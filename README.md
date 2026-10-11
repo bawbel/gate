@@ -1,5 +1,28 @@
 # bawbel-gate
 
+Runtime enforcement for MCP agents. A deterministic proxy between the agent host and its
+MCP servers that enforces capability manifests, session taint, and a non-configurable
+rule-of-two trifecta invariant, with a hash-chained audit log.
+
+The gate never reads model output. Every decision is made on structured JSON-RPC.
+
+```bash
+pip install "git+https://github.com/bawbel/gate.git@develop"   # not on PyPI yet
+
+bawbel-gate serve --config gate.yaml --learn          # observe, enforce nothing
+bawbel-gate learn synthesize --out manifests/draft/   # draft manifests from what you saw
+bawbel-gate serve --config gate.yaml                  # enforce
+```
+
+`serve` is launched by your MCP client, not run by hand. Before the first `serve`, write
+`gate.yaml` and one manifest per server. [Usage](#usage) walks through each step and lists
+what is not supported yet; [Commands](#commands) lists every command and option.
+
+[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
+
+<details>
+<summary>Badges and project status</summary>
+
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
 [![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
