@@ -61,6 +61,7 @@ Repository = "https://github.com/bawbel/gate"
 Documentation = "https://github.com/bawbel/gate/blob/main/DESIGN.md"
 "Bug Tracker" = "https://github.com/bawbel/gate/issues"
 "Security Policy" = "https://github.com/bawbel/gate/blob/main/SECURITY.md"
+"Changelog" = "https://github.com/bawbel/gate/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

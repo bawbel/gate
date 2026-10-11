@@ -4,12 +4,16 @@ All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 [Semantic Versioning](https://semver.org/).
 
-No version has been tagged or released yet. The M0-M7 build (project scaffold
-through policy engine, integrity pinning, operations layer, embedded console,
-and bawbel-hub) is documented as milestones in README's "What is built" table
-rather than itemized here; this file picks up from that baseline.
+The M0-M7 build (project scaffold through policy engine, integrity pinning,
+operations layer, embedded console, and bawbel-hub) is documented as
+milestones in README's "What is built" table rather than itemized here; this
+file picks up from that baseline.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-10-11
+
+First release on PyPI.
 
 ### Added
 
@@ -30,6 +34,10 @@ rather than itemized here; this file picks up from that baseline.
   Gitleaks (secret-scan.yml). Repo-level secret scanning, push protection,
   and Dependabot security updates enabled.
 - OpenSSF Scorecard workflow and badge.
+- MCP surface enumeration in DESIGN.md 3.3: which host and upstream messages
+  the gate answers, forwards, refuses, or drops (#21).
+- README: decision pipeline diagram, usage walkthrough, and command table
+  (#23, #24, #26, #31, #34).
 
 ### Fixed
 
@@ -48,9 +56,17 @@ rather than itemized here; this file picks up from that baseline.
   gitignored" file set rather than replacing it, so untracked working-tree
   files (`.agents/`, ~150K of unrelated content) were leaking into every
   build. Switched to `only-include`, a strict allowlist.
+- Upstream responses were read as "the next line on stdout", so a
+  notification or server-to-client request from an upstream server was
+  returned as the result of the pending call. Responses are now matched by
+  `id`; upstream notifications are dropped and server-to-client requests are
+  refused with `-32601` (#21).
 
 ### Security
 
 - Documented (`SECURITY.md`, `.gitleaks.toml`) and enforced (branch
   ruleset: required signed commits, required PR review) hygiene that was
   previously either aspirational or entirely absent.
+
+[Unreleased]: https://github.com/bawbel/gate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/bawbel/gate/releases/tag/v0.1.0
