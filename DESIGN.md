@@ -724,11 +724,30 @@ Append-only JSONL. Each record:
  "prev": "sha256:e3d1...", "hash": "sha256:90fa..."}
 ```
 
-`hash = sha256(canonical_json(record minus hash) || prev)`. Chain head is printed at
-`SESSION_END` and can be anchored externally (git note, Vault KV, or a transparency
-log later). `bawbel-gate audit verify <file>` replays the chain. Argument payloads are
-hashed, not stored, by default; `--store-args` exists for regulated deployments with
-their own encryption at rest.
+```
+hash = "sha256:" + lowercase_hex(sha256(canonical_json(record minus hash) || utf8(prev)))
+```
+
+- `canonical_json` is `audit/canonical.py`: keys sorted by Unicode code point, no
+  insignificant whitespace, non-ASCII written as UTF-8, numbers as Python's `json`
+  module writes them. It is not RFC 8785 (JCS). The two differ for non-integer numbers
+  (`1.0`, `1e-07`), integers above 2^53, `NaN` and `Infinity`, and the order of keys
+  outside the Basic Multilingual Plane.
+- `record minus hash` keeps `prev`: the previous hash is inside the hashed content and
+  is also concatenated after it.
+- `prev` is concatenated as the UTF-8 bytes of its `sha256:<hex>` text (71 bytes), not
+  as the raw 32-byte digest. The first record's `prev` is `sha256:` followed by 64
+  zeros.
+
+Gate chains are not cross-verifiable with ACS v0.1.0 ContextEntry chains, which use
+JCS, drop both hash fields, and concatenate the raw previous digest.
+`docs/adr/0001-audit-chain-construction.md` records the decision;
+`tests/test_audit_construction.py` pins the construction with golden values.
+
+Chain head is printed at `SESSION_END` and can be anchored externally (git note,
+Vault KV, or a transparency log later). `bawbel-gate audit verify <file>` replays the
+chain. Argument payloads are hashed, not stored, by default; `--store-args` exists
+for regulated deployments with their own encryption at rest.
 
 ## 9. AVE schema migration: v1.1 -> v1.2
 
