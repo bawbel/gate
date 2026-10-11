@@ -1,0 +1,22 @@
+schema: bawbel/capability-manifest/v1
+subject:
+  kind: mcp-server
+  name: hostile
+  transport: stdio
+
+provenance_class: tool.response.hostile
+instruction_authority: none
+
+# untrusted_content only: repeated get_file calls stay allow, so tests can check
+# that each response is paired with its own request.
+trifecta:
+  private_data: false
+  untrusted_content: true
+  external_comms: false
+
+grants:
+  tools:
+    - name: get_file
+      effect: allow
+    - name: "*"
+      effect: deny
