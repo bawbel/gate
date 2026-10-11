@@ -6,24 +6,24 @@ rule-of-two trifecta invariant, with a hash-chained audit log.
 
 The gate never reads model output. Every decision is made on structured JSON-RPC.
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](./pyproject.toml)
-[![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](#status-v10-feature-complete-pre-release)
-[![Tests](https://img.shields.io/badge/tests-337%20passing-brightgreen)](#install-development)
-[![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](./DESIGN.md)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/bawbel/gate/blob/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/bawbel-gate)](https://pypi.org/project/bawbel-gate/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/bawbel/gate/blob/main/pyproject.toml)
+[![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](https://github.com/bawbel/gate#status-v10-feature-complete-pre-release)
+[![Tests](https://img.shields.io/badge/tests-337%20passing-brightgreen)](https://github.com/bawbel/gate#install-development)
+[![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](https://github.com/bawbel/gate/blob/main/DESIGN.md)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/bawbel/gate/badge)](https://scorecard.dev/viewer/?uri=github.com/bawbel/gate)
 [![Code Scan](https://github.com/bawbel/gate/actions/workflows/code-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/code-scan.yml)
 [![Dependency Scan](https://github.com/bawbel/gate/actions/workflows/dependency-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/dependency-scan.yml)
 [![Secret Scan](https://github.com/bawbel/gate/actions/workflows/secret-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/secret-scan.yml)
-[![Security Policy](https://img.shields.io/badge/security-policy-blue)](./SECURITY.md)
-[![Contributor Covenant](https://img.shields.io/badge/code_of_conduct-2.1-blueviolet)](./CODE_OF_CONDUCT.md)
-[![DCO](https://img.shields.io/badge/DCO-required-lightgrey)](./CONTRIBUTING.md#pull-requests)
+[![Security Policy](https://img.shields.io/badge/security-policy-blue)](https://github.com/bawbel/gate/blob/main/SECURITY.md)
+[![Contributor Covenant](https://img.shields.io/badge/code_of_conduct-2.1-blueviolet)](https://github.com/bawbel/gate/blob/main/CODE_OF_CONDUCT.md)
+[![DCO](https://img.shields.io/badge/DCO-required-lightgrey)](https://github.com/bawbel/gate/blob/main/CONTRIBUTING.md#pull-requests)
 
-[Design](./DESIGN.md) · [Architecture](./ARCHITECTURE.md) · [Security](./SECURITY.md) · [Contributing](./CONTRIBUTING.md)
+[Design](https://github.com/bawbel/gate/blob/main/DESIGN.md) · [Architecture](https://github.com/bawbel/gate/blob/main/ARCHITECTURE.md) · [Security](https://github.com/bawbel/gate/blob/main/SECURITY.md) · [Contributing](https://github.com/bawbel/gate/blob/main/CONTRIBUTING.md)
 
 ```bash
-# not on PyPI yet
-pip install "git+https://github.com/bawbel/gate.git@develop"
+pip install bawbel-gate
 
 bawbel-gate serve --config gate.yaml --learn         # observe, enforce nothing
 bawbel-gate learn synthesize --out manifests/draft/  # draft manifests
@@ -31,14 +31,14 @@ bawbel-gate serve --config gate.yaml                 # enforce
 ```
 
 `serve` is launched by your MCP client, not run by hand. Before the first `serve`, write
-`gate.yaml` and one manifest per server. [Usage](#usage) walks through each step and lists
-what is not supported yet; [Commands](#commands) lists every command and option.
+`gate.yaml` and one manifest per server. [Usage](https://github.com/bawbel/gate#usage) walks through each step and lists
+what is not supported yet; [Commands](https://github.com/bawbel/gate#commands) lists every command and option.
 
 ## Status: v1.0 feature-complete (pre-release)
 
 The full enforcement core, integrity layer, operations stack, embedded console, and
-fleet hub are implemented. 337 tests pass. The public API is stable; the release
-package is not yet on PyPI.
+fleet hub are implemented. 337 tests pass. The public API is stable. The first package
+release, `0.1.0`, is on PyPI.
 
 ## How it works
 
@@ -103,18 +103,24 @@ upstream servers' tools reach the client as `{server}__{tool}`.
 
 ### Install
 
-Not yet published to PyPI. Install from the `develop` branch (Python 3.10 or later):
+From [PyPI](https://pypi.org/project/bawbel-gate/) (Python 3.10 or later):
 
 ```bash
-pip install "git+https://github.com/bawbel/gate.git@develop"
+pip install bawbel-gate
 bawbel-gate --version
 ```
 
 The `ops` extra adds the OpenTelemetry exporter. Without it, decision spans are no-ops.
 
 ```bash
-pip install "bawbel-gate[ops] @ git+https://github.com/bawbel/gate.git@develop"
+pip install "bawbel-gate[ops]"
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+```
+
+Unreleased changes on the `develop` branch:
+
+```bash
+pip install "git+https://github.com/bawbel/gate.git@develop"
 ```
 
 ### Install (development)
@@ -327,7 +333,7 @@ Remove `--learn` from the client args. In each session:
    server.
 2. `tools/list` returns `{server}__{tool}` names, without tools whose grant resolves to
    `deny`.
-3. Each `tools/call` runs the pipeline in [How it works](#how-it-works). An allowed call is
+3. Each `tools/call` runs the pipeline in [How it works](https://github.com/bawbel/gate#how-it-works). An allowed call is
    forwarded. A denied call is not forwarded and returns:
 
    ```json
@@ -342,7 +348,7 @@ Remove `--learn` from the client args. In each session:
    }
    ```
 
-   `data.reason` is one of the [deny reasons](#deny-reasons), except that a deny produced
+   `data.reason` is one of the [deny reasons](https://github.com/bawbel/gate#deny-reasons), except that a deny produced
    by a `deny` grant or a taint rule currently carries `resolved`. `data.ave` is always
    empty in the current code.
 4. Every decision is appended to `audit_log`. The chain head is printed on stderr when the
@@ -375,20 +381,19 @@ record. It does not signal a running gate. Taint lives in the gate process and e
 the session, which ends when the client disconnects.
 
 `serve --console 127.0.0.1:7317` starts the read-only console on loopback (see
-[Embedded console](#embedded-console-m6)).
+[Embedded console](https://github.com/bawbel/gate#embedded-console-m6)).
 
 ### Not yet supported
 
-- A PyPI release.
 - Upstream servers that validate the MCP handshake. The gate sends `initialize` with empty
   `params` and no `notifications/initialized`. Servers built on the official MCP Python
-  SDK reject that handshake, and the gate then exposes none of their tools.
+  SDK reject that handshake, and the gate then exposes none of their tools ([#27](https://github.com/bawbel/gate/issues/27)).
 - MCP methods other than `initialize`, `tools/list`, and `tools/call`. They return
   `-32601`, and the gate advertises only the `tools` capability, so resources and prompts
   are not reachable through the gate (DESIGN.md 3.3).
 - Transports other than stdio, on either side of the gate.
 - Clean stdout. The mode banner and the console URL with its token are written to stdout,
-  the JSON-RPC channel, and clients log them as parse errors.
+  the JSON-RPC channel, and clients log them as parse errors ([#28](https://github.com/bawbel/gate/issues/28)).
 - Error responses for malformed JSON-RPC from the client. A line that is not JSON is
   dropped with a stderr warning: no response, no audit record.
 
@@ -471,7 +476,7 @@ random bearer token is printed once at startup. Endpoints:
 |---|---|---|
 | `/v1/state` | GET | Full snapshot: sessions, servers, pending approvals, audit head |
 | `/v1/events` | GET | SSE stream of audit records as they are written |
-| `/v1/approvals/{id}` | POST | Console approval channel (race-safe: first writer wins). Not yet connected to the proxy; see [Approvals](#approvals) |
+| `/v1/approvals/{id}` | POST | Console approval channel (race-safe: first writer wins). Not yet connected to the proxy; see [Approvals](https://github.com/bawbel/gate#approvals) |
 | `/` | GET | Embedded UI bundle |
 
 The console is read-only except for the approval endpoint. No endpoint can issue
@@ -480,7 +485,7 @@ tool calls, edit manifests, or clear taint; those remain CLI-only.
 `/v1/state` reflects live session taint and per-server manifest state as the gate
 runs:
 
-![bawbel-gate serve --console startup and a live /v1/state snapshot showing session taint, server trifecta flags, and audit head](./docs/images/console.png)
+![bawbel-gate serve --console startup and a live /v1/state snapshot showing session taint, server trifecta flags, and audit head](https://raw.githubusercontent.com/bawbel/gate/main/docs/images/console.png)
 
 ### bawbel-hub (M7)
 
@@ -537,10 +542,10 @@ Six event classes emitted as structured records regardless of exporter:
 
 ## Documentation
 
-- [DESIGN.md](./DESIGN.md) - normative specification.
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - ecosystem map.
-- [docs/LANGUAGE.md](./docs/LANGUAGE.md) - canonical terminology.
-- [CHANGELOG.md](./CHANGELOG.md) - notable changes since the M0-M7 baseline.
+- [DESIGN.md](https://github.com/bawbel/gate/blob/main/DESIGN.md) - normative specification.
+- [ARCHITECTURE.md](https://github.com/bawbel/gate/blob/main/ARCHITECTURE.md) - ecosystem map.
+- [docs/LANGUAGE.md](https://github.com/bawbel/gate/blob/main/docs/LANGUAGE.md) - canonical terminology.
+- [CHANGELOG.md](https://github.com/bawbel/gate/blob/main/CHANGELOG.md) - notable changes since the M0-M7 baseline.
 
 ## Related projects
 
@@ -552,7 +557,7 @@ Six event classes emitted as structured records regardless of exporter:
 
 ## Security
 
-See [SECURITY.md](./SECURITY.md) for the disclosure policy. Do not open a public
+See [SECURITY.md](https://github.com/bawbel/gate/blob/main/SECURITY.md) for the disclosure policy. Do not open a public
 issue for a vulnerability.
 
 ## License
@@ -562,9 +567,9 @@ more than one gate) is the paid tier; see DESIGN.md 14 for the boundary.
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Read DESIGN.md before opening a PR that
+See [CONTRIBUTING.md](https://github.com/bawbel/gate/blob/main/CONTRIBUTING.md). Read DESIGN.md before opening a PR that
 touches `policy/`, `taint/`, `audit/`, or `integrity/`: behavior that diverges from
 the spec needs a DESIGN.md change first, not a larger diff. Commits must carry a
-DCO sign-off (`git commit -s`); see [GOVERNANCE.md](./GOVERNANCE.md) for who
-decides what, and [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for how we treat
+DCO sign-off (`git commit -s`); see [GOVERNANCE.md](https://github.com/bawbel/gate/blob/main/GOVERNANCE.md) for who
+decides what, and [CODE_OF_CONDUCT.md](https://github.com/bawbel/gate/blob/main/CODE_OF_CONDUCT.md) for how we treat
 each other while doing it.
