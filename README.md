@@ -34,7 +34,7 @@ bawbel-gate serve --config gate.yaml                 # enforce
 `gate.yaml` and one manifest per server. [Usage](https://github.com/bawbel/gate#usage) walks through each step and lists
 what is not supported yet; [Commands](https://github.com/bawbel/gate#commands) lists every command and option.
 
-## Status: v1.0 feature-complete (pre-release)
+## Status: v0.1.0 feature-complete (pre-release)
 
 The full enforcement core, integrity layer, operations stack, embedded console, and
 fleet hub are implemented. 337 tests pass. The public API is stable. The first package
