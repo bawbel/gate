@@ -33,7 +33,6 @@ keywords = [
     "audit-log",
     "supply-chain-security",
     "zero-trust",
-    "sandboxing",
     "runtime-security",
 ]
 classifiers = [
