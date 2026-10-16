@@ -89,7 +89,7 @@ flowchart TB
     PDB --> BMCP
     SCN -->|"findings, SARIF"| CI
     SCN -->|"diagnostics"| IDE
-    GATE -->|"Flow D · audit chain, push-only mTLS"| HUB
+    GATE -->|"Flow D · audit chain, push-only mTLS (specified)"| HUB
     HUB -.->|"federated rollup, planned"| PLAT
     REG -.->|"signed manifest baselines"| GATE
     PLAT -.->|"deny patterns → class candidates"| AVE
@@ -172,6 +172,10 @@ chain, not a pipeline; a deployment can run either, both, or neither. Recurring 
 patterns across teams are the eventual pipeline for new AVE class candidates via a
 federated platform, which closes the loop back to Flow A, but that hop is planned,
 not required for the hub to deliver its value today.
+
+Status: the hub side of Flow D (ingest, per-session chain verification, fleet state) is
+implemented. The gate-side push and the per-gate mTLS channel are specified, not
+implemented (DESIGN.md 14.3). See the bawbel-hub project entry below.
 
 ## 3. Projects
 
@@ -267,22 +271,28 @@ entries are signed; `harden` and `learn synthesize` consume them as baselines.
 - **Interface:** HTTPS + sigstore-style verification (open design question: signing
   identity, see DESIGN.md 12).
 
-### bawbel-hub (Layer 5a, DESIGN.md 14 complete, M7 next, first paid tier)
+### bawbel-hub (Layer 5a, DESIGN.md 14 complete, M7 partial, first paid tier)
 
 Self-hosted fleet console for one team or org: 5-50 gates, one console. Every
-developer's gate pushes its audit chain to the hub over mTLS; the hub replays it into
-fleet state and serves the posture view, per-developer drill-down, and the CISO
-report fleet-wide. No command channel: the hub cannot decide approvals, cannot reach
-into a gate, and cannot push configuration. bawbel-gate (including its own embedded
+developer's gate is specified to push its audit chain to the hub over mTLS; the hub
+replays it into fleet state and serves the posture view, per-developer drill-down, and
+the CISO report fleet-wide. No command channel: the hub cannot decide approvals, cannot
+reach into a gate, and cannot push configuration. bawbel-gate (including its own embedded
 console, 13.1) stays free and fully standalone; the hub is the paid line, drawn at
 "more than one gate."
 
-- **Consumes:** gate audit chains (push, mTLS); manifest repo (read, for drift
-  cross-check).
+- **Consumes:** gate audit chains (push over mTLS, specified; gates do not send yet);
+  manifest repo (read, for drift cross-check).
 - **Produces:** fleet posture, per-gate config-drift flags, fleet-wide CISO posture
   report.
 - **Interface:** ingest protocol 13.2 (same protocol the M6 stub server proves);
-  enrollment via single-use token, gate identity via per-gate mTLS client cert.
+  enrollment via single-use token (implemented); gate identity via per-gate mTLS client
+  cert (specified, not implemented).
+- **Status:** implemented on the hub side: ingest with per-session chain verification,
+  SQLite fleet state, single-use enrollment tokens, `GET /v1/fleet/state`. Not
+  implemented: the gate-side sender, per-gate identity (ingest authenticates with the
+  hub's shared admin token, and `gate_id` comes from the request path), TLS, and
+  enrollment token expiry.
 
 ### bawbel platform (Layer 5b, planned)
 

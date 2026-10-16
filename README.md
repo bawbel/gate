@@ -399,6 +399,8 @@ the session, which ends when the client disconnects.
   the JSON-RPC channel, and clients log them as parse errors ([#28](https://github.com/bawbel/gate/issues/28)).
 - Error responses for malformed JSON-RPC from the client. A line that is not JSON is
   dropped with a stderr warning: no response, no audit record.
+- Fleet ingest from gates to bawbel-hub. Gates do not send records yet, and the hub has
+  no per-gate identity or TLS. See [bawbel-hub (M7)](https://github.com/bawbel/gate#bawbel-hub-m7).
 
 ## Commands
 
@@ -496,6 +498,11 @@ runs:
 Self-hosted fleet manager for teams running more than one gate. Push-only by design:
 the hub never connects to a gate. The hub side below is implemented. The gate-side push
 client (`ingest/client.py`) is not wired into `serve`, so gates do not send records yet.
+
+Also not implemented: per-gate identity and TLS. Ingest authenticates with the hub's
+shared admin token (the one `hub serve` prints at startup), `gate_id` is taken from the
+request path, and `hub serve` listens on plain HTTP. DESIGN.md 14.3 specifies a per-gate
+mTLS client certificate. Enrollment tokens are single-use but do not expire.
 
 - Ingest service (`POST /v1/gates/{gate_id}/records`): verifies the hash chain per
   session and stores records idempotently by `(gate_id, session_id, seq)`. A batch
