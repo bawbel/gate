@@ -9,8 +9,8 @@ The gate never reads model output. Every decision is made on structured JSON-RPC
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/bawbel/gate/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/bawbel-gate)](https://pypi.org/project/bawbel-gate/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/bawbel/gate/blob/main/pyproject.toml)
-[![Status](https://img.shields.io/badge/status-v1.0%20feature--complete%20(pre--release)-orange)](https://github.com/bawbel/gate#status-v10-feature-complete-pre-release)
-[![Tests](https://img.shields.io/badge/tests-337%20passing-brightgreen)](https://github.com/bawbel/gate#install-development)
+[![Status](https://img.shields.io/badge/status-alpha%20(0.1.x)-orange)](https://github.com/bawbel/gate#status-alpha-01x)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/bawbel/gate#install-development)
 [![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](https://github.com/bawbel/gate/blob/main/DESIGN.md)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/bawbel/gate/badge)](https://scorecard.dev/viewer/?uri=github.com/bawbel/gate)
 [![Code Scan](https://github.com/bawbel/gate/actions/workflows/code-scan.yml/badge.svg?branch=develop)](https://github.com/bawbel/gate/actions/workflows/code-scan.yml)
@@ -34,11 +34,14 @@ bawbel-gate serve --config gate.yaml                 # enforce
 `gate.yaml` and one manifest per server. [Usage](https://github.com/bawbel/gate#usage) walks through each step and lists
 what is not supported yet; [Commands](https://github.com/bawbel/gate#commands) lists every command and option.
 
-## Status: v.1.1 feature-complete (pre-release)
+## Status: v0.1.0 feature-complete (pre-release)
 
-The full enforcement core, integrity layer, operations stack, embedded console, and
-fleet hub are implemented. 337 tests pass. The public API is stable. The first package
-release, `0.1.0`, is on PyPI.
+The enforcement core (policy engine, taint tracking, trifecta invariant, audit chain),
+integrity pinning, learning mode, the embedded console, and the bawbel-hub server are
+implemented. Gaps are listed under
+[Not yet supported](https://github.com/bawbel/gate#not-yet-supported). The test suite
+passes, including property, replay, and corpus tests. Releases are published to PyPI as
+`bawbel-gate`. Pre-1.0: interfaces may change between minor versions.
 
 ## How it works
 
@@ -130,7 +133,7 @@ git clone https://github.com/bawbel/gate.git
 cd gate
 git checkout develop
 pip install -e ".[dev]" --break-system-packages
-pytest                        # 337 tests
+pytest                        # full suite
 pre-commit run --all-files    # lint gate
 ```
 
@@ -426,9 +429,9 @@ Every command takes `--help`. `bawbel-gate --version` prints the installed versi
 | M2 | Policy engine, taint tracker, trifecta invariant, audit chain | done |
 | M3 | Integrity pinning, drift detection, `harden --ave` | done |
 | M4 | Approval UX budget, benign corpus, latency gates | done |
-| M5 | OTel spans, CEF/syslog export, posture report | done |
+| M5 | OTel spans, CEF/syslog export, posture report | partial: no CEF/syslog exporter |
 | M6 | Embedded console + Console API | done |
-| M7 | bawbel-hub: fleet ingest, state store, enrollment | done |
+| M7 | bawbel-hub: fleet ingest, state store, enrollment | partial: gate-side push not wired |
 
 ### Policy engine (M2)
 
@@ -456,16 +459,17 @@ can bypass it.
 
 Tool schemas are hashed at review time (`bawbel-gate verify`). On each session
 start the gate re-hashes and compares. Any mutation -- a poisoned description, an
-injected tool, a rug-pull -- is detected as drift. The server is suspended
-(`on_drift: suspend`) and all its tools withheld until the operator runs
-`bawbel-gate verify --accept` after reviewing the diff.
+injected tool, a rug-pull -- is detected as drift. The server is suspended and all its
+tools withheld until the operator reviews the changed tool definitions and runs
+`bawbel-gate verify --accept`, which stores the new hash. `verify` reports the stored
+and current hashes; it does not produce a diff.
 
 ### Audit log (M2)
 
 Append-only JSONL. Every record carries `hash = sha256(canonical(record) || prev)`.
 The chain is verified on demand (`bawbel-gate audit verify`). Argument payloads are
-hashed, not stored, by default (`args_sha256`). The forensic record is local and
-tamper-evident; the OTel/SIEM export is an operational feed on top of it.
+hashed, never stored (`args_sha256`). The forensic record is local and
+tamper-evident; OTel decision spans (`ops` extra) are an operational feed on top of it.
 
 ### Embedded console (M6)
 
@@ -489,14 +493,15 @@ runs:
 
 ### bawbel-hub (M7)
 
-Self-hosted fleet manager for teams running more than one gate. Push-only: gates
-push audit records to the hub; the hub never connects inward.
+Self-hosted fleet manager for teams running more than one gate. Push-only by design:
+the hub never connects to a gate. The hub side below is implemented. The gate-side push
+client (`ingest/client.py`) is not wired into `serve`, so gates do not send records yet.
 
-- Ingest service (`POST /v1/gates/{gate_id}/records`): verifies hash chains per
-  session, stores records idempotent by `(gate_id, session_id, seq)`, quarantines
-  and raises `gate.chain.gap` on tamper evidence.
-- Fleet state store: SQLite (eval) or Postgres (prod), fully rebuildable from raw
-  records.
+- Ingest service (`POST /v1/gates/{gate_id}/records`): verifies the hash chain per
+  session and stores records idempotently by `(gate_id, session_id, seq)`. A batch
+  with a broken chain is rejected with HTTP 409 `chain_mismatch`; nothing from it is
+  stored.
+- Fleet state store: SQLite, fully rebuildable from raw records.
 - Single-use enrollment tokens: `bawbel-gate hub token new`, then
   `bawbel-gate enroll --hub URL --token TOKEN`.
 - Fleet posture API: `GET /v1/fleet/state` returns per-gate allow/approve/deny
@@ -504,32 +509,38 @@ push audit records to the hub; the hub never connects inward.
 
 ## Deny reasons
 
-The closed set from DESIGN.md 6.2. Any deny carries exactly one:
+The reasons the code sets in `data.reason` on a deny. Each deny carries exactly one:
 
 | Reason | Cause |
 |---|---|
-| `no_grant` | No grant matched the tool name |
+| `no_grant` | No grant matched the tool name, or the name is not `{server}__{tool}` |
+| `resolved` | The matched grant's effect is `deny` (including the `"*"` wildcard), or a taint rule lowered the effect to `deny` |
 | `condition_failed` | A matched grant's condition was not satisfied |
-| `trifecta_third_leg` | Trifecta invariant triggered; human approval required |
-| `guard:secret_scan` | Argument contained a secret pattern |
-| `guard:byte_cap` | Argument exceeded the outbound byte cap |
-| `approval_timeout` | Human did not respond within the approval window |
-| `approval_denied` | Human denied the approval request |
-| `drift:suspended` | Server is suspended due to tool-schema drift |
-| `parse_error` | Malformed JSON-RPC request |
+| `guard:secret_scan` | An argument contained a secret pattern |
+| `guard:byte_cap` | An argument exceeded the outbound byte cap |
+| `approval_denied` | The approval was denied. Under an MCP client, the terminal channel also produces this when it consumes a client message (see [Approvals](https://github.com/bawbel/gate#approvals)) |
+| `approval_timeout` | No approval answer within `approval.timeout_seconds` |
+| `drift:suspended` | The server is suspended after tool-schema drift, or the `{server}` prefix names no configured server |
 
-## Alertable events (OTel / CEF)
+`trifecta_third_leg` is the reason on an `approve` decision, not on a deny. If that
+approval is denied or times out, the deny carries `approval_denied` or
+`approval_timeout`. A request line that is not valid JSON is dropped with a stderr
+warning naming `parse_error`; no deny is sent.
 
-Six event classes emitted as structured records regardless of exporter:
+## Alertable events
 
-| Event | Default severity | Meaning |
-|---|---|---|
-| `gate.drift.detected` | high | Supply-chain mutation post-review |
-| `gate.trifecta.trip` | medium | Injection precondition reached |
-| `gate.deny.burst` | medium | Agent probing outside granted surface |
-| `gate.secretscan.hit` | high | Exfiltration attempt via arguments |
-| `gate.approval.timeout` | low | Unattended agent hit a human gate |
-| `gate.chain.gap` | critical | Audit log tamper indicator |
+DESIGN.md 8.5 defines six event classes. The gate sends an event as an OTel span only
+when an OTel tracer is configured (`ops` extra); otherwise sending is a no-op. The audit
+log records the underlying decisions either way.
+
+| Event | Default severity | Meaning | Emitted today |
+|---|---|---|---|
+| `gate.drift.detected` | high | Supply-chain mutation post-review | yes, at session start |
+| `gate.trifecta.trip` | medium | Injection precondition reached | no |
+| `gate.deny.burst` | medium | Agent probing outside granted surface | no |
+| `gate.secretscan.hit` | high | Exfiltration attempt via arguments | no |
+| `gate.approval.timeout` | low | Unattended agent hit a human gate | no |
+| `gate.chain.gap` | critical | Audit log tamper indicator | no; the hub returns HTTP 409 |
 
 ## Non-goals
 
@@ -538,7 +549,8 @@ Six event classes emitted as structured records regardless of exporter:
 - No fail-open mode, no configurable trifecta bypass, no "trust this server fully"
   toggle.
 - No inbound connections to gates, ever, in any deployment shape.
-- No argument payload storage by default. Records carry `args_sha256`.
+- No argument payloads in the audit log. Records carry `args_sha256`. Learning-mode
+  observations are a separate file (Usage, step 3).
 
 ## Documentation
 
@@ -553,7 +565,7 @@ Six event classes emitted as structured records regardless of exporter:
   standard bawbel-gate enforces against (`bawbel-gate harden --ave`).
 - [bawbel-scanner](https://pypi.org/project/bawbel-scanner/) - static detection
   for agent codebases, MCP configs, and server cards.
-- [PiranhaDB](https://api.piranha.bawbel.io) - the queryable AVE corpus API.
+- PiranhaDB - the queryable AVE corpus API. No public endpoint yet.
 
 ## Security
 
