@@ -1147,6 +1147,13 @@ not an architectural one.
   workstation credentials, directory integration, or agents beyond the gate itself.
   (SSO for console viewers is a v1.1 hub concern, not a gate concern.)
 
+**Implementation status: specified, not implemented.** The credential model above (the
+per-gate mTLS client certificate here and in the 13.2 transport) is not built. In the
+current code, ingest authenticates with the hub's shared admin token, `gate_id` is taken
+from the request path, and `hub serve` listens on plain HTTP. Until the per-gate
+credential ships, attribution is not structural. Single-use enrollment tokens are
+implemented. Tracked in [#49](https://github.com/bawbel/gate/issues/49).
+
 ### 14.4 Fleet state and console
 
 Fleet state is a pure replay of verified chains: sessions, taint, trifecta flags,
