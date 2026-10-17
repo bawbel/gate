@@ -33,7 +33,7 @@ integrity pinning, learning mode, and the Console API (once shipped).
 
 - GitHub Security Advisories: use the "Report a vulnerability" button under this
   repository's Security tab.
-- Email: **security@bawbel.io**. PGP is not required; if you want to encrypt,
+- Email: **bawbel.io@gmail.com**. PGP is not required; if you want to encrypt,
   ask for a key first and we will provide one.
 
 Include, as far as you have it:
