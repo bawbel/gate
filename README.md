@@ -9,7 +9,7 @@ The gate never reads model output. Every decision is made on structured JSON-RPC
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/bawbel/gate/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/bawbel-gate)](https://pypi.org/project/bawbel-gate/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/bawbel/gate/blob/main/pyproject.toml)
-[![Status](https://img.shields.io/badge/status-alpha%20(0.1.x)-orange)](https://github.com/bawbel/gate#status-alpha-01x)
+[![Status](https://img.shields.io/badge/status-alpha%20(0.1.x)-orange)](https://github.com/bawbel/gate#status-v010-feature-complete-pre-release)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/bawbel/gate#install-development)
 [![Fail-closed](https://img.shields.io/badge/fail--closed-enforced-critical)](https://github.com/bawbel/gate/blob/main/DESIGN.md)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/bawbel/gate/badge)](https://scorecard.dev/viewer/?uri=github.com/bawbel/gate)
