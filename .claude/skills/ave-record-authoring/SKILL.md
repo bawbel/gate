@@ -62,4 +62,4 @@ it is not a record yet; generalize to the class or stop.
 - A record is published when CI validates it and PiranhaDB serves it; `?schema=1.1`
   must strip 1.2 fields, and the contract test for both versions must stay green.
 - Backfill lands as reviewed PR batches; each batch updates the triage counter on
-  ave.bawbel.io.
+  aveproject.org.
