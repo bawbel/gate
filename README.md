@@ -568,8 +568,9 @@ log records the underlying decisions either way.
 
 ## Related projects
 
-- [AVE](https://ave.bawbel.io) - the behavioral vulnerability classification
-  standard bawbel-gate enforces against (`bawbel-gate harden --ave`).
+- [AVE](https://aveproject.org) - the behavioral vulnerability classification
+  standard bawbel-gate enforces against (`bawbel-gate harden --ave`), an independent
+  project ([aveproject/ave](https://github.com/aveproject/ave)).
 - [bawbel-scanner](https://pypi.org/project/bawbel-scanner/) - static detection
   for agent codebases, MCP configs, and server cards.
 - PiranhaDB - the queryable AVE corpus API. No public endpoint yet.
