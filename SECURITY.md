@@ -11,8 +11,9 @@ tracker, trifecta invariant, MCP multiplexer, argument guards, audit chain,
 integrity pinning, learning mode, and the Console API (once shipped).
 
 **Out of scope, report to the relevant repo instead:**
-- AVE record content or the AVE schema: the `ave` repository.
-- bawbel-scanner detection rules: the `bawbel-scanner` repository.
+- AVE record content or the AVE schema: [aveproject/ave](https://github.com/aveproject/ave),
+  an independent project. Contact: aveproject.org@gmail.com.
+- bawbel-scanner detection rules: [bawbel/scanner](https://github.com/bawbel/scanner).
 - PiranhaDB API availability or data correctness: the `piranha-api` repository.
 
 **Explicitly in scope even though they may look like "just a bug":**
