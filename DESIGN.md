@@ -2,7 +2,7 @@
 
 **Component:** bawbel-gate (Layer 2.5, runtime enforcement)
 **Status:** Draft v0.1
-**Depends on:** AVE schema >= 1.2 (see Section 9), bawbel-scanner >= 1.3.0
+**Depends on:** AVE schema 1.1.0 (aveproject/ave; see Section 9), bawbel-scanner >= 1.3.0
 **Package:** `bawbel-gate` (PyPI), console script `bawbel-gate`
 
 ---
@@ -599,8 +599,8 @@ Events, exhaustively:
 
 Rejected calls return a JSON-RPC error with a structured, non-negotiable message:
 `{"code": -32031, "message": "bawbel-gate: denied", "data": {"reason": "...", "ave": [...]}}`.
-The `data.ave` field lists AVE IDs whose `capability_mitigation` produced the blocking
-rule, when applicable (Section 9). The model sees why; the model cannot argue with it.
+The `data.ave` field lists AVE IDs whose mitigation stanza produced the blocking rule,
+when applicable (Section 9.1). The model sees why; the model cannot argue with it.
 
 ## 7. Taint tracking and the trifecta invariant
 
@@ -749,101 +749,59 @@ Vault KV, or a transparency log later). `bawbel-gate audit verify <file>` replay
 chain. Argument payloads are hashed, not stored, by default; `--store-args` exists
 for regulated deployments with their own encryption at rest.
 
-## 9. AVE schema migration: v1.1 -> v1.2
+## 9. AVE records: schema 1.1.0
 
-### 9.1 New fields
+The gate consumes AVE records at schema 1.1.0, published by the independent AVE project
+([aveproject/ave](https://github.com/aveproject/ave),
+`schema/ave-record-1.1.0.schema.json`). The gate does not define or extend the AVE schema.
+Record content and the schema belong to AVE; this section states what the gate reads and
+where gate-specific policy lives.
 
-Three optional objects added to the AVE record schema. Optional in v1.2, required in
-v2.0. No existing field changes; this is additive and backward-compatible.
+### 9.1 What the gate uses
 
-```json
-{
-  "provenance_vector": {
-    "entry_class": "tool.response.*",
-    "payload_surface": "tool_schema.description",
-    "escalation": "data->instruction"
-  },
-  "trifecta_profile": {
-    "requires": ["untrusted_content", "external_comms"],
-    "private_data": "amplifies"
-  },
-  "capability_mitigation": {
-    "manifest_stanza": {
-      "taint_rules": [{
-        "when": {"tainted_by_any": ["tool.response.*"]},
-        "then": [{"tools_with": "external_comms", "effect": "approve"}]
-      }]
-    },
-    "integrity_requirements": ["tool_schema_integrity"]
-  }
-}
-```
+From the AVE record:
 
-Field semantics:
+- `ave_id`: the identifier cited in deny responses (`data.ave`, Section 6.2) and accepted
+  by `harden --ave`.
+- `provenance_vector` (optional in 1.1.0): `entry_class`, `payload_surface`, `escalation`.
+  AVE defines `entry_class` as layer tokens (`tool_response`, `tool_schema`,
+  `server_card`, `skill_file`, `user_input`, and others) and `escalation` as one of
+  `data_to_instruction`, `instruction_to_capability`, `capability_to_identity`. These
+  tokens are not the gate's provenance classes (Section 7). A mapping from AVE
+  `entry_class` tokens to gate provenance classes is not specified yet (open question,
+  Section 12); until it is, the gate does not consume `provenance_vector` at runtime.
+- `trifecta_profile` (optional in 1.1.0): `requires` and `amplifies`, each a list of
+  `private_data`, `untrusted_content`, `external_comms`. A deployment-applicability
+  filter (9.3); the gate does not consume it at runtime.
 
-- `provenance_vector.entry_class`: where in the context supply chain the attack enters.
-  Enum plus prefix wildcards, same grammar as taint match expressions:
-  `user.direct | operator.system | skill.file | memory.persisted | model.generated |
-  web.fetched | tool.response.* | tool.schema | server.card`.
-  Note `tool.schema` and `server.card` are entry classes only (they enter at
-  grant/verify time, not as session taint), which is why this enum is a superset of
-  the runtime provenance classes.
-- `provenance_vector.payload_surface`: the concrete field or channel carrying the
-  payload (free text, controlled vocabulary grown by convention).
-- `provenance_vector.escalation`: one of `data->instruction`, `instruction->capability`,
-  `capability->identity`. The authority jump the class performs.
-- `trifecta_profile.requires`: legs that must be present for the class to be
-  exploitable. `private_data | untrusted_content | external_comms`, each valued
-  implicitly `required` by membership; the optional keyed form (`"private_data":
-  "amplifies"`) marks legs that worsen impact without being preconditions.
-- `capability_mitigation.manifest_stanza`: a fragment that validates against the
-  `manifestStanza` definition in the capability-manifest schema (`#/$defs/manifestStanza`,
-  Section 4.2) and neutralizes the class when merged into a deployment's manifests.
-  A stanza contains only mergeable keys (`taint_rules`, `integrity_watch`, `approval`);
-  it is not a complete manifest and must not be validated against the root schema.
-  This is the executable link: scanner detects the class, the record emits the policy,
-  the gate enforces it, and denials cite the AVE ID back (Section 6.2).
-  `bawbel-gate harden --ave AVE-2026-000XX` merges the stanza.
+Mitigation stanzas are not part of AVE. The gate keeps them in its own mitigations map,
+`mitigations/ave-mitigations.json`, validated by `schemas/bawbel-ave-mitigations-v1.json`
+and keyed by AVE ID. Each entry carries:
 
-### 9.2 Migration of the 51 published records
+- `manifest_stanza`: a fragment that validates against the `manifestStanza` definition in
+  the capability-manifest schema (`#/$defs/manifestStanza`, Section 4.2) and neutralizes
+  the class when merged into a deployment's manifests. A stanza contains only mergeable
+  keys (`taint_rules`, `integrity_watch`, `approval`); it is not a complete manifest and
+  must not be validated against the root schema.
+- `review_status` (`unreviewed`, `llm_drafted`, `reviewed`), `reviewed_by`,
+  `reviewed_at`, and `rule_ids` (one stable gate rule ID per rule in the stanza, required
+  when `reviewed`). Section 11 covers `--allow-unreviewed`.
 
-Mechanics:
+`bawbel-gate harden --ave AVE-2026-000XX` merges the stanza for that ID. This is the
+executable link: the scanner detects the class, the mitigations map supplies the policy,
+the gate enforces it, and denials cite the AVE ID back (Section 6.2).
 
-```
-scripts/migrate_ave_v1_2.py
-  --in  records/            # 51 x AVE-2026-*.json at schema 1.1
-  --out records/            # in-place, git-diffable
-  --schema schemas/ave-1.2.json
-```
+### 9.2 Superseded: the v1.2 migration plan
 
-The script bumps `schema_version` to `"1.2"`, inserts the three fields as `null`, and
-sets `"triage": {"provenance": "unclassified"}` in record metadata. Validation via
-`jsonschema` (draft 2020-12). No classification is auto-guessed; a wrong
-`provenance_vector` is worse than an absent one.
-
-Backfill is a manual triage pass over 51 records, tractable in one sitting per batch:
-
-| Batch | Records | Expected dominant entry classes |
-|-------|---------|--------------------------------|
-| 1 | tool/schema poisoning cluster (incl. AVE-2026-00041 server-card, AVE-2026-00042 dynamic fetch) | `tool.schema`, `server.card`, `web.fetched` |
-| 2 | injection-via-content cluster | `tool.response.*`, `web.fetched`, `skill.file` |
-| 3 | identity/credential cluster | `capability->identity` escalations |
-| 4 | remainder + cross-review | mixed |
-
-Publication sequence:
-
-1. `schemas/ave-1.2.json` merged, CHANGELOG entry, migration script merged.
-2. Migrated 51 records published with `null` fields (schema-valid immediately).
-3. Batches 1-4 land as reviewed PRs; each batch updates the triage counter on
-   ave.bawbel.io.
-4. PiranhaDB API: `GET /records?schema=1.2` returns new fields;
-   `?schema=1.1` (default until v2.0) strips them. Additive fields mean no breaking
-   change for existing bawbel-scanner and VS Code extension consumers; both pin 1.1
-   behavior until their own releases opt in.
-5. New query surface once backfill completes:
-   `GET /records?trifecta=untrusted_content,external_comms` ("every class exploitable
-   in my posture") and `GET /records/{id}/mitigation` (raw manifest stanza, consumed by
-   `bawbel-gate harden`).
+Earlier revisions of this section specified an AVE schema 1.2 that added
+`provenance_vector`, `trifecta_profile`, and `capability_mitigation` to AVE records, a
+migration of the 51 records then published, and a PiranhaDB `?schema=` switch. AVE took a
+different path. Schema 1.1.0 carries `provenance_vector` and `trifecta_profile` as
+optional fields (87 of 87 and 77 of 87 records on 2026-10-18), `capability_mitigation`
+stayed out of the standard, and PiranhaDB is offline. The gate's vendored
+`schemas/ave-1.2.json`, `SCHEMA_AVE_VERSION_SUPPORTED = "1.2"` in `_const.py`,
+`scripts/migrate_ave_v1_2.py`, and the 1.2-shaped test corpus predate this section and
+are brought in line by implementation work (#75).
 
 ### 9.3 Scoring interaction
 
@@ -952,7 +910,8 @@ The concrete stanza source and `review_status` semantics are in
   fork it? current position: inherit, monotone); manifest signing identity for
   manifests that live only in an org's own repository (sigstore keyless vs org PKI);
   whether `learn synthesize` should emit `trifecta` flags at all or always defer to a
-  curated server classification DB.
+  curated server classification DB; how AVE 1.1.0 `provenance_vector.entry_class` tokens
+  map to gate provenance classes (Section 9.1).
 - **Proposed:** manifest signing identity for manifests distributed through
   bawbel-registry (bawbel-registry `docs/adr/0002-signing-identity.md`). The registry
   signs one index with sigstore keyless signing from a gated GitHub Actions workflow;
