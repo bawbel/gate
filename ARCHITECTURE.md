@@ -239,13 +239,16 @@ API with schema negotiation, a per-record mitigation endpoint, and posture queri
 
 ### bawbel-mcp (Layer 2/3 edge, Glama listing)
 
-MCP server exposing scanner and corpus lookups to agents themselves, so an agent can
-check a dependency or server card mid-task. Deliberately read-only and
-trifecta-minimal: no private-data tools, no egress tools.
+MCP server exposing scanner and AVE lookups to agents themselves, so an agent can
+check a dependency or server card mid-task. It is not read-only or egress-free:
+`scan_server_card` fetches a URL the caller supplies, the AVE tools call the AVE API,
+the scan tools read a local path when given one, and `accept_finding` writes a
+suppression into a file.
 
-- **Consumes:** PiranhaDB; scanner as a library.
+- **Consumes:** AVE records (the AVE API, with the published AVE corpus as fallback;
+  bawbel/bawbel-mcp#21); the `bawbel` CLI, run as a subprocess.
 - **Produces:** lookup/scan tools over MCP.
-- **Interface:** MCP; ships its own capability manifest as reference practice.
+- **Interface:** MCP. No capability manifest ships with it yet.
 
 ### vscode-bawbel (Layer 2 edge, live: v1.1.1, Marketplace)
 
