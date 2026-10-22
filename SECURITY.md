@@ -23,10 +23,32 @@ integrity pinning, learning mode, and the Console API (once shipped).
 - Any way to disable, skip, or narrow the trifecta invariant (DESIGN.md §5.2 step
   6) through manifest content, configuration, or timing.
 - Any way to falsify, reorder, or gap the audit chain without detection by
-  `bawbel-gate audit verify`.
+  `bawbel-gate audit verify`, other than the limits listed under
+  "Limits of the audit chain" below.
 - Any way to make `tools/list` expose a tool that should be denied and hidden.
 - Argument-guard bypasses that let a secret or over-length payload reach an
   upstream call undetected.
+
+## Limits of the audit chain
+
+`bawbel-gate audit verify` shows that, in the file it is given, no record was edited,
+deleted, inserted, or reordered without every hash after it being recomputed. It does not
+show:
+
+- **Records removed from the end.** The remaining chain is still valid. A head recorded
+  outside the log catches this.
+- **A log rewritten from the first record.** The chain uses no key, so whoever can write the
+  file can rebuild every hash and `audit verify` passes. A head recorded outside the log
+  before the rewrite catches this too. See
+  [docs/adr/0001-audit-chain-construction.md](docs/adr/0001-audit-chain-construction.md).
+- **That the gate was running correctly when the records were written.** A record is what the
+  gate wrote. It does not show that the decision it records was right, or that the gate was
+  running between two records.
+- **Non-repudiation.** A compromised gate can write any record, correctly chained. Tying
+  records to one gate needs asymmetric signing, which is not implemented.
+
+How to record a head, and how to check a log against it, is in the README under
+"Verifying a log you did not write".
 
 ## Reporting a vulnerability
 
