@@ -1,0 +1,72 @@
+name: Design partner
+description: You tried bawbel-gate on a real setup and want to tell us what happened. No payment is implied.
+title: "partner: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Design partners shape bawbel-gate by trying it on a real agent setup and
+        telling us what happened.
+
+        **No payment is implied, in either direction.** Filing this creates no
+        agreement, no commitment from either side, and no support obligation.
+
+        Do not include secrets, credentials, customer data, or private hostnames.
+        Redact manifests before you paste them. To report a vulnerability, follow
+        SECURITY.md; never put one in a public issue.
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: >-
+        What agent setup do you want gate in front of, and what are you trying to
+        prevent or learn?
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        The agent host (for example Claude Desktop, Cursor, or a custom agent), OS,
+        Python version, bawbel-gate version, and how many MCP servers sit behind gate.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected outcome
+      description: What would make this trial worth your time?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tested
+    attributes:
+      label: What you tested
+      description: >-
+        What you ran and what happened: commands, redacted manifests, and results.
+        Leave empty if you have not started.
+    validations:
+      required: false
+
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Blockers
+      description: Anything that stopped you or slowed you down.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: publish
+    attributes:
+      label: Publishing results
+      options:
+        - label: >-
+            You may summarize the results of this trial publicly, without my name,
+            organization, or hostnames.
+          required: false
