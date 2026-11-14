@@ -25,6 +25,7 @@ from bawbel_gate._const import (
 from bawbel_gate.policy.engine import resolve
 from bawbel_gate.policy.manifest import load_manifest
 from bawbel_gate.mux.session import SessionState
+from tests.i6_scan import assert_no_hits
 
 CORPUS_SESSIONS = Path(__file__).parent / "corpus" / "sessions"
 CORPUS_MANIFESTS = Path(__file__).parent / "corpus" / "manifests"
@@ -198,16 +199,7 @@ class TestSecurityReview:
 
     def test_no_inline_sort_keys_outside_canonical(self):
         """I6: no json.dumps(sort_keys=True) outside audit/canonical.py."""
-        import subprocess
-        result = subprocess.run(  # nosec B603 B607 # noqa: S603 S607
-            ["grep", "-rn", "sort_keys=True", "src/"],
-            capture_output=True, text=True,
-        )
-        hits = [
-            line for line in result.stdout.splitlines()
-            if "canonical.py" not in line
-        ]
-        assert not hits, "sort_keys=True found outside canonical.py:\n" + "\n".join(hits)
+        assert_no_hits()
 
     def test_trifecta_invariant_in_engine_code(self):
         """The engine must reference trifecta_third_leg in its source (invariant is present)."""

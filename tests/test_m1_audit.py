@@ -7,6 +7,8 @@ from bawbel_gate.audit.canonical import canonical_bytes, canonical_str
 from bawbel_gate.audit.writer import AuditWriter, verify_chain
 from bawbel_gate._const import AUDIT_CHAIN_GENESIS, AUDIT_HASH_PREFIX
 
+from tests.i6_scan import assert_no_hits
+
 
 class TestCanonical:
     def test_sorted_keys(self):
@@ -35,16 +37,7 @@ class TestCanonical:
 
     def test_i6_no_sort_keys_elsewhere(self):
         """I6: ensure no other module calls json.dumps with sort_keys=True."""
-        import subprocess
-        result = subprocess.run(  # nosec B603 B607 # noqa: S603 S607
-            ["grep", "-rn", "sort_keys=True", "src/"],
-            capture_output=True, text=True
-        )
-        hits = [
-            line for line in result.stdout.splitlines()
-            if "canonical.py" not in line
-        ]
-        assert not hits, "sort_keys=True found outside canonical.py:\n" + "\n".join(hits)
+        assert_no_hits()
 
 
 class TestAuditWriter:
