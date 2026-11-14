@@ -379,6 +379,44 @@ bawbel-gate posture --audit-log /home/you/.bawbel/gate.audit.jsonl
 link on stderr. `posture` and `clear` default to `bawbel-audit.jsonl`, not to the gate's
 `audit_log`; pass `--audit-log`.
 
+#### Verifying a log you did not write
+
+`audit verify` needs the chain file and nothing else: no gate config, no manifests, and no
+access to the host that wrote the log. Anyone with a copy can replay it. From the file alone
+it detects an edited, deleted, inserted, or reordered record, and a record cut off mid-line.
+It does not detect records removed from the end of the file, or a log rewritten from the
+first record with every hash recomputed, because the chain uses no key. Both change the head,
+which is the `hash` of the last record. Record the head somewhere the party who can write the
+log cannot rewrite, and compare against it. [SECURITY.md](https://github.com/bawbel/gate/blob/main/SECURITY.md#limits-of-the-audit-chain)
+lists what the chain does not show.
+
+Read the head from the log:
+
+```bash
+bawbel-gate audit tail gate.audit.jsonl -n 1 | python3 -c 'import json,sys; print(json.load(sys.stdin)["hash"])'
+```
+
+The gate also prints the head on stderr when a session ends. Either of these keeps a copy
+outside the log:
+
+- A git note in a repository the gate host cannot rewrite:
+  `git notes --ref=gate-audit add -m "gate.audit.jsonl <head>" HEAD`, then
+  `git push origin refs/notes/gate-audit`. Protect that ref against force pushes.
+- A daily commit of `<date> <head>` to a file in a separate repository, with force pushes
+  disabled on its branch.
+
+To check a log later, verify it, then confirm the anchored head is still one of its records.
+The log may have grown since, so the anchored head need not be the last record:
+
+```bash
+bawbel-gate audit verify gate.audit.jsonl
+grep -Fc '"hash":"<head>"' gate.audit.jsonl    # 1 if the anchored record is present
+```
+
+A count of 0 means the file was cut before that record or rewritten.
+[`tests/test_audit_third_party_verify.py`](https://github.com/bawbel/gate/blob/main/tests/test_audit_third_party_verify.py)
+runs each of these steps.
+
 `bawbel-gate clear --session ID --confirm --audit-log FILE` appends a `SESSION_CLEAR`
 record. It does not signal a running gate. Taint lives in the gate process and ends with
 the session, which ends when the client disconnects.
@@ -471,7 +509,10 @@ and current hashes; it does not produce a diff.
 Append-only JSONL. Every record carries `hash = sha256(canonical(record) || prev)`.
 The chain is verified on demand (`bawbel-gate audit verify`). Argument payloads are
 hashed, never stored (`args_sha256`). The forensic record is local and
-tamper-evident; OTel decision spans (`ops` extra) are an operational feed on top of it.
+tamper-evident against changes to single records. Catching removed final records or a full
+rewrite needs a head recorded elsewhere: see
+[Verifying a log you did not write](https://github.com/bawbel/gate#verifying-a-log-you-did-not-write).
+OTel decision spans (`ops` extra) are an operational feed on top of it.
 
 ### Embedded console (M6)
 
