@@ -137,6 +137,27 @@ pytest                        # full suite
 pre-commit run --all-files    # lint gate
 ```
 
+### Supported platforms
+
+The [`ci` workflow](https://github.com/bawbel/gate/blob/develop/.github/workflows/ci.yml) runs the test suite on every pull request. A platform is listed as supported only while its job in that workflow passes. "Supported" here means the test suite passes there in CI.
+
+| Platform | Python | CI job | Status |
+|---|---|---|---|
+| Linux | 3.10 | `test (py3.10, ubuntu-latest)` | supported |
+| Linux | 3.11 | `test (py3.11, ubuntu-latest)` | supported |
+| Linux | 3.12 | `test (py3.12, ubuntu-latest)` | supported |
+| macOS | 3.12 | `test (py3.12, macos-latest)` | supported |
+| Windows | 3.12 | `test (py3.12, windows-latest)` | not yet supported ([#116](https://github.com/bawbel/gate/issues/116)) |
+
+Windows runs as an experimental job: a failure there does not fail the workflow, and it fails today
+([#114](https://github.com/bawbel/gate/issues/114), [#105](https://github.com/bawbel/gate/issues/105)).
+Combinations that are not in the table (macOS and Windows on 3.10 and 3.11) are not tested. To compare the
+table with a run:
+
+```bash
+gh run view <run-id> --repo bawbel/gate --json jobs --jq '.jobs[] | [.name, .conclusion] | @tsv'
+```
+
 ### 1. Write gate.yaml
 
 ```yaml
