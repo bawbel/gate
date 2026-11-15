@@ -5,6 +5,9 @@ from pathlib import Path
 
 import pytest
 
+# Blocks and records non-loopback network attempts for the whole suite. See tests/_netguard.py.
+pytest_plugins = ["tests._netguard"]
+
 REPO_ROOT = Path(__file__).parent.parent
 SCHEMA_DIR = REPO_ROOT / "schemas"
 CORPUS_DIR = REPO_ROOT / "tests" / "corpus"
