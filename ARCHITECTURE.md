@@ -20,7 +20,7 @@ versioned, public interface. No layer reaches around another.
 │ LAYER 5b  bawbel platform                    [PLANNED] │     │           │
 │           multi-org SaaS, ingest at scale              │     │           │
 ├────────────────────────────────────────────────────────┤     │           │
-│ LAYER 5a  bawbel-hub                    [DESIGN → M7]  │     │           │
+│ LAYER 5a  bawbel-hub                    [M7 partial]   │     │           │
 │           self-hosted fleet console, one org/team,     │     │           │
 │           5-50 gates · FIRST PAID TIER                 │     │           │
 ├────────────────────────────────────────────────────────┤     │           │
@@ -31,14 +31,14 @@ versioned, public interface. No layer reaches around another.
 │           api.piranha.bawbel.io                        │     │           │
 │           queryable AVE corpus, mitigation endpoint    │     │           │
 ├────────────────────────────────────────────────────────┤     ▼           │
-│ LAYER 2.5 bawbel-gate                    [DESIGN → M1] │  classes     findings
+│ LAYER 2.5 bawbel-gate                    [alpha 0.1.0] │  classes     findings
 │           runtime enforcement: manifests, taint,       │  → rules     → decisions
 │           trifecta invariant, audit chain              │  → stanzas   → audit chains
 ├────────────────────────────────────────────────────────┤  → pins      → new class
 │ LAYER 2   bawbel-scanner                 [LIVE v1.3.0] │     │        candidates
 │           static detection: CLI, pre-commit, CI        │     │           │
 ├────────────────────────────────────────────────────────┤     │           │
-│ LAYER 1   AVE                       [LIVE, 51 records] │     ▼           │
+│ LAYER 1   AVE                       [LIVE, 87 records] │     ▼           │
 │           the standard: behavioral vulnerability       │                 │
 │           classes for agentic systems, AIVSS-scored    │ ────────────────┘
 └────────────────────────────────────────────────────────┘
@@ -67,7 +67,7 @@ flowchart TB
     end
     subgraph L2["Layers 2 / 2.5 · detection and enforcement"]
         SCN["bawbel-scanner<br/>v1.3.0 · LIVE"]
-        GATE["bawbel-gate<br/>DESIGN → M1"]
+        GATE["bawbel-gate<br/>alpha 0.1.0 · M5, M7 partial"]
     end
     subgraph EDGE["edge surfaces"]
         IDE["vscode-bawbel"]
@@ -75,7 +75,7 @@ flowchart TB
         CI["bawbel-integrations"]
     end
     subgraph L5A["Layer 5a · team tier, first paid product"]
-        HUB["bawbel-hub<br/>DESIGN → M7 · self-hosted"]
+        HUB["bawbel-hub<br/>M7 partial · self-hosted"]
     end
     subgraph PLAN["planned layers"]
         REG["Layer 4 · Registry"]
@@ -151,6 +151,10 @@ flowchart LR
     B -.->|"audit evidence"| R
 ```
 
+Status: AVE records do not carry `capability_mitigation` yet (0 of 87 on aveproject/ave
+main, 2026-10-18), so the record-to-stanza step is planned. Today `harden --ave` reads
+stanzas from gate's own `mitigations/ave-mitigations.json` (2 entries).
+
 ### Flow D · Telemetry: evidence, upward
 
 ```
@@ -182,17 +186,19 @@ implemented (DESIGN.md 14.3). See the bawbel-hub project entry below.
 Each project: what it is, what it consumes, what it produces, and the interface it is
 held to.
 
-### ave (Layer 1, live: schema 1.2, 51 records)
+### ave (Layer 1, independent project aveproject/ave; live: schema 1.1.0, 87 records)
 
-The standard. CWE-shaped behavioral class definitions for agentic-system
-vulnerabilities, scored with OWASP AIVSS v0.8. Since schema 1.2, records carry a
-provenance vector (where in the context supply chain the class enters), a trifecta
-profile (which legs make it exploitable), and an executable mitigation stanza.
+The standard, governed separately from Bawbel. CWE-shaped behavioral class definitions
+for agentic-system vulnerabilities, scored with OWASP AIVSS v0.8. Records carry a
+provenance vector (where in the context supply chain the class enters; 87 of 87) and a
+trifecta profile (which legs make it exploitable; 77 of 87). The executable mitigation
+stanza (`capability_mitigation`) is defined but populated in 0 of 87.
 
 - **Consumes:** research, incident reports, fleet deny patterns (Flow D).
 - **Produces:** versioned JSON records; JSON Schemas for records and capability
   manifests.
-- **Interface:** git repo + `schemas/ave-1.2.json`; docs at ave.bawbel.io.
+- **Interface:** git repo (github.com/aveproject/ave) +
+  `schema/ave-record-1.1.0.schema.json`; site at aveproject.org.
 - **Strategic gate:** second independent implementer before OWASP/MITRE outreach.
 
 ### bawbel-scanner (Layer 2, live: v1.3.0, PyPI)
@@ -207,7 +213,7 @@ hook, and CI job; emits JSON and SARIF.
 - **Interface:** CLI contract + SARIF 2.1.0; secret-detector set shared with the gate
   as a library, not forked.
 
-### bawbel-gate (Layer 2.5, DESIGN.md complete, M1 next)
+### bawbel-gate (Layer 2.5, alpha 0.1.0 on PyPI, M5 and M7 partial)
 
 Runtime enforcement. MCP multiplexer proxy enforcing capability manifests, session
 taint, and the rule-of-two trifecta invariant, with a hash-chained audit log,
@@ -220,10 +226,11 @@ embedded console (v1.2).
 - **Interface:** capability-manifest/v1 schema; Console API (DESIGN.md 13.1); ingest
   protocol (DESIGN.md 13.2).
 
-### piranhadb (Layer 3, live: Railway)
+### piranhadb (Layer 3, offline)
 
-Read-only corpus API at `api.piranha.bawbel.io`. Serves AVE records with schema
-negotiation, the per-record mitigation endpoint, and (post-backfill) posture queries.
+The hosted API at `api.piranha.bawbel.io` is offline: the host does not resolve. AVE
+records are served by `api.aveproject.org/records`. As built, it was a read-only corpus
+API with schema negotiation, a per-record mitigation endpoint, and posture queries.
 
 - **Consumes:** ave repo on deploy (CI publishes validated records).
 - **Produces:** `GET /records`, `GET /records/{id}/mitigation`, `?schema=`,
@@ -243,7 +250,7 @@ trifecta-minimal: no private-data tools, no egress tools.
 ### vscode-bawbel (Layer 2 edge, live: v1.1.1, Marketplace)
 
 IDE surface. Inline diagnostics from scanner findings while editing agent code and
-MCP configs; each diagnostic links to its AVE record on ave.bawbel.io.
+MCP configs; each diagnostic links to its AVE record.
 
 - **Consumes:** bawbel-scanner output (local invocation).
 - **Produces:** editor diagnostics, quick links, quick-fix hints where a stanza

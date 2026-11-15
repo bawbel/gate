@@ -52,7 +52,7 @@ is officially representing the project in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to **security@bawbel.io**. All complaints will be reviewed and
+reported to **bawbel.io@gmail.com**. All complaints will be reviewed and
 investigated promptly and fairly.
 
 The maintainer is obligated to respect the privacy and security of the reporter

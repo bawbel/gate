@@ -150,9 +150,10 @@ Do not open a public issue or PR that demonstrates a security bypass. See
 ## Scope boundaries with other Bawbel repos
 
 - Changes to the AVE record schema or the capability-manifest schema itself:
-  propose in the `ave` repository, since bawbel-gate is a consumer of that
+  propose in [aveproject/ave](https://github.com/aveproject/ave), an independent
+  project (aveproject.org@gmail.com), since bawbel-gate is a consumer of that
   schema, not its owner (see ARCHITECTURE.md §4.3, interface freeze points).
-- Detection rule changes: `bawbel-scanner`.
+- Detection rule changes: [bawbel/scanner](https://github.com/bawbel/scanner).
 - Fleet console / multi-gate features: DESIGN.md §14 (bawbel-hub) describes the
   boundary between what ships free in the gate's embedded console and what is
   hub-only; check there before adding fleet-shaped functionality to this repo.
