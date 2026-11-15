@@ -46,6 +46,10 @@ Blank issues are disabled. A security bypass never goes in an issue; see
 
 ## Setup
 
+`scripts/contributor_smoke.sh` runs the commands in this section and the next every week, in
+a temporary clone, and fails naming the step that broke. Keep each command on its own line in
+a fenced block.
+
 ```bash
 git clone https://github.com/bawbel/gate.git
 cd gate
@@ -60,7 +64,7 @@ pytest                              # full suite
 pytest tests/property/ -x           # invariant property tests, stop on first failure
 pytest tests/replay/                # scripted attack replays
 pre-commit run --all-files          # must be clean before you open a PR
-bawbel-gate lint manifests/ --schema capability-manifest/v1
+bawbel-gate lint tests/corpus/manifests/ --schema capability-manifest/v1
 ```
 
 ## Code style
