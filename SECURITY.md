@@ -137,3 +137,9 @@ We track upstream advisories for direct dependencies via Dependabot and
 OpenSSF Scorecard. A vulnerability in a dependency that is reachable through
 bawbel-gate's attack surface (not merely present in the tree) is in scope for
 this policy; report it the same way.
+
+## Verifying a release
+
+Releases on PyPI carry signed build provenance.
+[docs/VERIFYING-RELEASES.md](docs/VERIFYING-RELEASES.md) shows how to check it with
+`pypi-attestations`, and how to compare a file's hash.

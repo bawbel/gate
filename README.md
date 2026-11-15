@@ -113,6 +113,9 @@ pip install bawbel-gate
 bawbel-gate --version
 ```
 
+To check where a release came from before you rely on it, see
+[docs/VERIFYING-RELEASES.md](https://github.com/bawbel/gate/blob/main/docs/VERIFYING-RELEASES.md).
+
 The `ops` extra adds the OpenTelemetry exporter. Without it, decision spans are no-ops.
 
 ```bash
