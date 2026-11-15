@@ -115,27 +115,28 @@ done
 
 [ -d "$cwd/.git" ] || die "after the documented steps there is no git checkout at $cwd"
 
-contribute() {
-  echo "==> contribution: $*"
-}
+fail_at() { echo "FAILED at: $*" >&2; exit 1; }
+contribute() { echo "==> contribution: $*"; }
 
-contribute "branch, edit a docs file, commit with a sign-off"
-(
-  cd "$cwd"
-  git switch -q -c smoke/contributor-path
-  printf 'Contributor smoke test.\n' > docs/contributor-smoke-note.md
-  git add docs/contributor-smoke-note.md
-  GIT_AUTHOR_NAME="Smoke Test" GIT_AUTHOR_EMAIL="smoke@example.invalid" \
-  GIT_COMMITTER_NAME="Smoke Test" GIT_COMMITTER_EMAIL="smoke@example.invalid" \
-    git commit -s -q -m "docs: contributor smoke test"
-) || { echo "FAILED at: git commit -s (the pre-commit hooks or git refused the commit)" >&2; exit 1; }
+contribute "branch from the clone's HEAD"
+git -C "$cwd" switch -q -c smoke/contributor-path || fail_at "git switch -c smoke/contributor-path"
+
+contribute "edit a docs file"
+{ printf 'Contributor smoke test.\n' > "$cwd/docs/contributor-smoke-note.md" \
+    && git -C "$cwd" add docs/contributor-smoke-note.md; } \
+  || fail_at "adding docs/contributor-smoke-note.md"
+
+contribute "git commit -s"
+GIT_AUTHOR_NAME="Smoke Test" GIT_AUTHOR_EMAIL="smoke@example.invalid" \
+GIT_COMMITTER_NAME="Smoke Test" GIT_COMMITTER_EMAIL="smoke@example.invalid" \
+  git -C "$cwd" commit -s -q -m "docs: contributor smoke test" \
+  || fail_at "git commit -s (git or a pre-commit hook refused the commit)"
 
 contribute "the commit carries a Signed-off-by line"
 git -C "$cwd" log -1 --format=%B | grep -qx "Signed-off-by: Smoke Test <smoke@example.invalid>" \
-  || { echo "FAILED at: the commit has no Signed-off-by line, so git commit -s did not sign it off" >&2; exit 1; }
+  || fail_at "the commit has no Signed-off-by line, so git commit -s did not sign it off"
 
 contribute "bawbel-gate --version"
-(cd "$cwd" && bawbel-gate --version) \
-  || { echo "FAILED at: bawbel-gate --version" >&2; exit 1; }
+(cd "$cwd" && bawbel-gate --version) || fail_at "bawbel-gate --version"
 
 echo "contributor path OK in ${SECONDS} seconds"
