@@ -92,10 +92,23 @@ def _documented_head(chain: Path, verifier) -> str:
 
 
 def _records_with_hash(chain: Path, head: str) -> int:
-    """The README comparison: how many records carry the anchored head as their hash."""
-    found = subprocess.run(  # nosec B603 B607 # noqa: S603 S607 -- fixed argv, no shell
-        ["grep", "-Fc", f'"hash":"{head}"', str(chain)],
-        capture_output=True, text=True, timeout=60,
+    """The README comparison, `grep -Fc '"hash":"<head>"' FILE`, done in Python.
+
+    Counts the lines that contain the text, as grep -c does. grep is not called from here
+    because on Windows the double quotes in the pattern do not reach Git's grep intact: every
+    variant with quotes counted 0 on windows-latest while the same grep found the head
+    without them (#114). The file is read as bytes: the writer produces CRLF line endings on
+    Windows, and the text it matches does not depend on them.
+    """
+    needle = f'"hash":"{head}"'.encode()
+    return sum(1 for line in chain.read_bytes().split(b"\n") if needle in line)
+
+
+def _documented_grep(chain: Path, head: str) -> int:
+    """The README command, run as written by a POSIX shell in the directory of the file."""
+    command = f"grep -Fc '\"hash\":\"{head}\"' {chain.name}"
+    found = subprocess.run(  # nosec B602 # noqa: S602 -- the README command; head is a hex hash
+        command, shell=True, cwd=chain.parent, capture_output=True, text=True, timeout=60,
     )
     return int(found.stdout.strip())
 
@@ -203,7 +216,6 @@ class TestNotDetectedWithoutAnAnchoredHead:
         assert forged_head != head
 
 
-@pytest.mark.skipif(shutil.which("grep") is None, reason="the documented comparison uses grep")
 class TestAnchoredHead:
     def test_the_documented_command_yields_the_writer_head(self, origin, verifier):
         chain, head = origin
@@ -234,3 +246,47 @@ class TestAnchoredHead:
         _write_chain(forged, forged_events)
         assert _documented_head(forged, verifier) != anchored
         assert _records_with_hash(forged, anchored) == 0
+
+
+class TestRecordsWithHash:
+    """The Python count behaves like grep -Fc, including on a file with CRLF line endings."""
+
+    def test_it_counts_lines_not_occurrences(self, tmp_path):
+        chain = tmp_path / "gate.audit.jsonl"
+        chain.write_text('{"hash":"sha256:ab"} {"hash":"sha256:ab"}\n{"hash":"sha256:cd"}\n')
+        assert _records_with_hash(chain, "sha256:ab") == 1
+
+    def test_it_finds_the_head_in_a_file_with_crlf_line_endings(self, tmp_path):
+        chain = tmp_path / "gate.audit.jsonl"
+        chain.write_bytes(b'{"seq":1,"hash":"sha256:ab"}\r\n{"seq":2,"hash":"sha256:cd"}\r\n')
+        assert _records_with_hash(chain, "sha256:ab") == 1
+        assert _records_with_hash(chain, "sha256:cd") == 1
+
+    def test_it_does_not_count_the_head_when_it_is_only_a_prev_pointer(self, tmp_path):
+        chain = tmp_path / "gate.audit.jsonl"
+        chain.write_text('{"seq":2,"prev":"sha256:ab","hash":"sha256:cd"}\n')
+        assert _records_with_hash(chain, "sha256:ab") == 0
+
+    def test_it_returns_zero_for_a_head_that_is_absent(self, tmp_path):
+        chain = tmp_path / "gate.audit.jsonl"
+        chain.write_text('{"hash":"sha256:cd"}\n')
+        assert _records_with_hash(chain, "sha256:ab") == 0
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32" or shutil.which("grep") is None,
+    reason="the README command is POSIX shell syntax (single quotes)",
+)
+class TestDocumentedGrepCommandAgrees:
+    """On a POSIX shell the command the README prints gives the same count as _records_with_hash."""
+
+    def test_when_the_anchored_head_is_still_in_a_grown_log(self, origin, verifier):
+        chain, anchored = origin
+        AuditWriter.from_existing(chain).append({"event": "CALL_DECIDED", "session": "s2"})
+        copy = Path(shutil.copy(chain, verifier[0]))
+        assert _documented_grep(copy, anchored) == _records_with_hash(copy, anchored) == 1
+
+    def test_when_the_log_was_cut_before_the_anchored_head(self, origin, verifier):
+        chain, anchored = origin
+        truncated = _handed_over(chain, _lines(chain)[:3], verifier)
+        assert _documented_grep(truncated, anchored) == _records_with_hash(truncated, anchored) == 0
