@@ -135,8 +135,11 @@ preserves behavior), say so in the PR and explain why.
 - Required before merge: full suite, property tests, replay tests, pre-commit, and
   the approval-budget corpus check (`pytest tests/test_m4_corpus.py`). A change
   that adds approval prompts on the benign workload corpus is a regression, not a
-  feature. CI runs code, dependency, and secret scans; it does not run the test
-  suite yet, so paste the results into the PR template's Verification block.
+  feature. CI runs the whole suite (property, replay, and corpus tests included) on
+  Linux with Python 3.10 to 3.12 and on macOS with 3.12, the pre-commit lint, a wheel
+  install, and code, dependency, and secret scans. Windows runs as an experimental
+  job that does not fail the workflow. Still paste your local results into the PR
+  template's Verification block, so a reviewer sees what you ran.
 - Every commit carries a DCO sign-off: `git commit -s`. The sign-off is your
   statement, under the Developer Certificate of Origin, that you have the right to
   submit the contribution under this project's license. PRs with unsigned commits
