@@ -23,7 +23,7 @@ states: Implements DESIGN.md <N> (merged in #<M>).
 
 ## Verification
 
-<!-- Paste the summary line of each command. No CI workflow runs the test suite yet. -->
+<!-- Paste the summary line of each command you ran locally. CI also runs the suite on every pull request. -->
 
 ```text
 pytest                          ->

@@ -23,6 +23,7 @@ import pytest
 
 from bawbel_gate.console.auth import mint_token, verify_token, TOKEN_BYTE_LENGTH
 from bawbel_gate.console.state import ConsoleState, serialize_state
+from bawbel_gate.console import approvals as approvals_module
 from bawbel_gate.console.approvals import ApprovalRegistry, ApprovalDecision
 from bawbel_gate.mux.session import SessionState
 
@@ -146,6 +147,32 @@ class TestStateSerializer:
 # Approval registry — race semantics (DESIGN.md 13.1 POST /v1/approvals/{id})
 # ---------------------------------------------------------------------------
 
+class _FakeClock:
+    """A monotonic clock that moves only when the test says so."""
+
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
+
+@pytest.fixture
+def clock(monkeypatch):
+    """Replace the `time` that bawbel_gate.console.approvals reads, and only that one.
+
+    The registry stamps an expiry with time.monotonic() when it registers and compares against
+    time.monotonic() when it reads, so a test that moves this clock decides when an approval
+    expires. Nothing sleeps, and the result does not depend on the platform's clock resolution.
+    """
+    fake = _FakeClock()
+    monkeypatch.setattr(approvals_module, "time", fake)
+    return fake
+
+
 class TestApprovalRegistry:
     def test_register_and_retrieve(self):
         reg = ApprovalRegistry()
@@ -185,12 +212,41 @@ class TestApprovalRegistry:
         assert len(wins) == 1
         assert len(losses) == 1
 
-    def test_expired_approval_not_retrievable(self):
+    def test_expired_approval_not_retrievable(self, clock):
         reg = ApprovalRegistry()
         ap_id = reg.register(
-            session="s", server="s", tool="t", cause="c", expires_in_s=0.001
+            session="s", server="s", tool="t", cause="c", expires_in_s=30.0
         )
-        time.sleep(0.01)
+        assert reg.get(ap_id) is not None  # registered, not yet expired
+        clock.advance(29.0)
+        assert reg.get(ap_id) is not None  # still inside the timeout
+        clock.advance(2.0)
+        assert reg.get(ap_id) is None  # expired
+
+    def test_deciding_an_expired_approval_is_a_404(self, clock):
+        reg = ApprovalRegistry()
+        ap_id = reg.register(
+            session="s", server="s", tool="t", cause="c", expires_in_s=30.0
+        )
+        clock.advance(31.0)
+        assert reg.decide(ap_id, ApprovalDecision.GRANT) is None  # 404 semantics
+
+    def test_approval_expires_on_the_real_clock(self):
+        """No fake clock: an approval stops being retrievable once its timeout has passed.
+
+        The wait polls with a deadline. A fixed sleep just past a 1 ms timeout is not enough
+        on Windows, where time.monotonic() advances in about 15.6 ms steps on Python 3.12 and
+        earlier, so a short sleep can return before the clock has moved. This test does not
+        assert that the approval is live first: a paused runner could pass the timeout before
+        that read, and the fake-clock test above covers it.
+        """
+        reg = ApprovalRegistry()
+        ap_id = reg.register(
+            session="s", server="s", tool="t", cause="c", expires_in_s=0.05
+        )
+        deadline = time.monotonic() + 5.0
+        while reg.get(ap_id) is not None and time.monotonic() < deadline:
+            time.sleep(0.01)
         assert reg.get(ap_id) is None  # expired
 
     def test_approval_id_format(self):
