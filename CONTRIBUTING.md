@@ -154,6 +154,14 @@ preserves behavior), say so in the PR and explain why.
   submit the contribution under this project's license. PRs with unsigned commits
   are not merged.
 
+### Release rule
+
+- A promotion from `develop` to `main` is merged with a merge commit, never a squash.
+- A back-merge of `main` into `develop` is merged with a merge commit, never a squash.
+
+A squash copies the `develop` commits onto `main` under new hashes, so the two
+branches diverge at every release (#109, #112, #136).
+
 ## Reporting a vulnerability
 
 Do not open a public issue or PR that demonstrates a security bypass. See
