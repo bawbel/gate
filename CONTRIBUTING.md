@@ -63,6 +63,11 @@ pre-commit run --all-files          # must be clean before you open a PR
 bawbel-gate lint manifests/ --schema capability-manifest/v1
 ```
 
+The suite refuses network access. `tests/_netguard.py` blocks every connection and name lookup
+to a non-loopback address and fails the session if one was attempted. If your change adds code
+that connects anywhere, say so in the pull request and update the README's "Network behavior"
+section: `tests/test_network_surface.py` fails until you do.
+
 ## Code style
 
 Enforced by pre-commit, not by review discussion:
