@@ -75,3 +75,35 @@ jobs:
           /tmp/verify-venv/bin/pip install dist/*.whl
           cd /tmp && /tmp/verify-venv/bin/bawbel-gate --version
           cd /tmp && /tmp/verify-venv/bin/bawbel-gate lint --help
+      - name: The wheel ships the py.typed marker
+        run: unzip -l dist/*.whl | grep -q 'bawbel_gate/py.typed'
+
+  # The mypy run on src/ reports and does not block: its step has continue-on-error, so the
+  # job stays green and the count is in the job summary. Make it blocking once the errors are
+  # down to zero. The consumer step does fail the job: it checks that py.typed still works.
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install with dev dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: mypy on src/
+        continue-on-error: true
+        run: |
+          status=0
+          mypy > mypy.txt 2>&1 || status=$?
+          cat mypy.txt
+          { echo "### mypy on src/"; echo; tail -n 1 mypy.txt; } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - name: A consumer of the built package gets types
+        run: |
+          python -m pip install build
+          python -m build --wheel
+          python -m venv /tmp/consumer-venv
+          /tmp/consumer-venv/bin/pip install mypy dist/*.whl
+          printf 'from bawbel_gate.policy.manifest import load_manifest\n' > /tmp/consumer.py
+          cd /tmp && /tmp/consumer-venv/bin/mypy /tmp/consumer.py

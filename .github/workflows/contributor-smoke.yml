@@ -1,0 +1,37 @@
+name: contributor-smoke
+
+# Follows CONTRIBUTING.md in a temporary clone, the way a new contributor would, so a documented
+# command that stops working fails here instead of in a newcomer's first hour. Scheduled runs
+# use the default branch. Pull requests run it when they change what it follows.
+on:
+  schedule:
+    - cron: "17 3 * * 1"  # Mondays, 03:17 UTC
+  workflow_dispatch:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - CONTRIBUTING.md
+      - scripts/contributor_smoke.sh
+      - pyproject.toml
+      - .pre-commit-config.yaml
+      - .github/workflows/contributor-smoke.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contributor-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: contributor path
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Follow CONTRIBUTING.md in a temporary clone
+        run: bash scripts/contributor_smoke.sh
