@@ -50,6 +50,17 @@ show:
 How to record a head, and how to check a log against it, is in the README under
 "Verifying a log you did not write".
 
+## Network behavior
+
+The gate's own code makes one outbound connection: `bawbel-gate enroll`, to the hub URL you
+give it. It listens only when you start `serve --console` or `hub serve`, on the address you
+give it (the default is `127.0.0.1`). It sends no telemetry. The optional OpenTelemetry
+exporter is not called by any code under `src/` in this version.
+
+Upstream MCP servers are whatever you configure. The gate does not restrict what they do on
+the network. The README's "Network behavior" section has the full list, and
+`tests/test_network_surface.py` fails when the code and that list drift apart.
+
 ## Reporting a vulnerability
 
 **Do not open a public issue.** Report privately using either:

@@ -611,6 +611,40 @@ log records the underlying decisions either way.
 | `gate.approval.timeout` | low | Unattended agent hit a human gate | no |
 | `gate.chain.gap` | critical | Audit log tamper indicator | no; the hub returns HTTP 409 |
 
+## Network behavior
+
+This is what the gate's own code does on the network at this version. It is read from
+`src/` and held in place by `tests/test_network_surface.py`, which fails when a module that
+can reach the network appears and this section does not change with it. It covers the gate's
+code, not its dependencies, and not the upstream MCP servers.
+
+| Command | Network use |
+|---|---|
+| `bawbel-gate enroll --hub URL --token TOKEN` | One outbound HTTP POST to `URL/v1/enroll`, carrying the single-use token, with a 10 second timeout. The URL is the one you pass. This is the only outbound connection the gate's code makes. |
+| `bawbel-gate serve --console HOST:PORT` (or `BAWBEL_CONSOLE_ADDR`) | Opt-in. Listens for HTTP on HOST:PORT. The default address is `127.0.0.1:7317`. Without it, `serve` listens on nothing. |
+| `bawbel-gate hub serve` | Listens for HTTP. The default address is `127.0.0.1:8443`. |
+| every other command | No network use by the gate itself. |
+
+- **No telemetry.** The gate has no code that sends usage data, analytics, or crash reports.
+- **Upstream MCP servers.** The gate starts the servers listed in `gate.yaml` as
+  subprocesses and talks to them over stdio. What those upstream MCP servers do on the
+  network is whatever you configured them to do. The gate does not restrict it.
+- **OpenTelemetry (optional).** The `ops` extra installs an OTLP/gRPC span exporter
+  (`ops/otel.py`). It sends to the endpoint in `OTEL_EXPORTER_OTLP_ENDPOINT` once
+  `setup_otel()` has run. Nothing under `src/` calls `setup_otel()` in this version, so
+  installing the extra and setting the variable does not by itself send spans. If a later
+  change calls it, that is a second outbound connection and this section changes in the same
+  pull request.
+- **Fleet ingest.** `ingest/client.py` builds batches from the local audit log and sends
+  nothing. Nothing under `src/` calls it yet.
+
+How CI holds this: the test suite runs with a guard (`tests/_netguard.py`) that raises on any
+connection or name lookup to a non-loopback address, and fails the whole session if one was
+attempted, even when the code under test catches the error. The guard sees Python's `socket`
+module in the test process. It does not see child processes, code the tests do not run, or
+gRPC, which opens its own sockets. That is why `tests/test_network_surface.py` also checks the
+list above against the imports in `src/`.
+
 ## Non-goals
 
 - Not a prompt filter. Every enforcement decision reads structured JSON-RPC only;
