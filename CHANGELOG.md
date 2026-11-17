@@ -11,6 +11,13 @@ itemized here; this file picks up from that baseline.
 
 ## [Unreleased]
 
+### Added
+
+- `bawbel-gate lint` prints a `W-UNENFORCED` warning for each `subject.binary_integrity`
+  and each `integrity_watch` entry of kind `binary` or `remote_resource`. The schema
+  accepts them and the gate does not enforce them (DESIGN.md 2.2, #42). A warning does not
+  change the exit code.
+
 ## [0.1.1] - 2026-10-12
 
 README and metadata fixes for the PyPI project page. No code changes.
