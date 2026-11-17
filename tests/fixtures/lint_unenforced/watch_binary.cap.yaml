@@ -1,0 +1,24 @@
+schema: bawbel/capability-manifest/v1
+subject:
+  kind: mcp-server
+  name: unenforced-watch-binary
+  transport: stdio
+
+provenance_class: tool.response.example
+instruction_authority: none
+
+trifecta:
+  private_data: false
+  untrusted_content: false
+  external_comms: false
+
+grants:
+  tools:
+    - name: get_item
+      effect: allow
+    - name: "*"
+      effect: deny
+
+integrity_watch:
+  - kind: binary
+    on_drift: suspend
