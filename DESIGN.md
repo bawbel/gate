@@ -2,7 +2,7 @@
 
 **Component:** bawbel-gate (Layer 2.5, runtime enforcement)
 **Status:** Draft v0.1
-**Depends on:** AVE schema 1.1.0 (aveproject/ave; see Section 9), bawbel-scanner >= 1.3.0
+**Depends on:** AVE schema 1.3.0 (aveproject/ave; see Section 9), bawbel-scanner >= 1.3.0
 **Package:** `bawbel-gate` (PyPI), console script `bawbel-gate`
 
 ---
@@ -749,13 +749,14 @@ Vault KV, or a transparency log later). `bawbel-gate audit verify <file>` replay
 chain. Argument payloads are hashed, not stored, by default; `--store-args` exists
 for regulated deployments with their own encryption at rest.
 
-## 9. AVE records: schema 1.1.0
+## 9. AVE records: schema 1.3.0
 
-The gate consumes AVE records at schema 1.1.0, published by the independent AVE project
+The gate targets AVE records at schema 1.3.0, published by the independent AVE project
 ([aveproject/ave](https://github.com/aveproject/ave),
-`schema/ave-record-1.1.0.schema.json`). The gate does not define or extend the AVE schema.
+`schema/ave-record-1.3.0.schema.json`). The gate does not define or extend the AVE schema.
 Record content and the schema belong to AVE; this section states what the gate reads and
-where gate-specific policy lives.
+where gate-specific policy lives. No module under `src/` reads an AVE record today:
+`harden --ave` looks an AVE ID up in the gate's own mitigations map (9.1).
 
 ### 9.1 What the gate uses
 
@@ -763,16 +764,22 @@ From the AVE record:
 
 - `ave_id`: the identifier cited in deny responses (`data.ave`, Section 6.2) and accepted
   by `harden --ave`.
-- `provenance_vector` (optional in 1.1.0): `entry_class`, `payload_surface`, `escalation`.
+- `provenance_vector` (optional in 1.3.0): `entry_class`, `payload_surface`, `escalation`.
   AVE defines `entry_class` as layer tokens (`tool_response`, `tool_schema`,
   `server_card`, `skill_file`, `user_input`, and others) and `escalation` as one of
   `data_to_instruction`, `instruction_to_capability`, `capability_to_identity`. These
   tokens are not the gate's provenance classes (Section 7). A mapping from AVE
   `entry_class` tokens to gate provenance classes is not specified yet (open question,
   Section 12); until it is, the gate does not consume `provenance_vector` at runtime.
-- `trifecta_profile` (optional in 1.1.0): `requires` and `amplifies`, each a list of
+- `trifecta_profile` (optional in 1.3.0): `requires` and `amplifies`, each a list of
   `private_data`, `untrusted_content`, `external_comms`. A deployment-applicability
   filter (9.3); the gate does not consume it at runtime.
+- `status` (required): `active`, `deprecated`, `merged`, `rejected`, or `draft`. AVE
+  requires a consumer to treat any status other than `active` as not active, and not to
+  assume the list of values is complete. `harden --ave` does not read AVE records, so it
+  does not check `status`. Both entries in the mitigations map name active records
+  (2026-11-17). Whether `harden --ave` should refuse an AVE ID whose record is not active
+  is not specified yet (open question, Section 12).
 
 Mitigation stanzas are not part of AVE. The gate keeps them in its own mitigations map,
 `mitigations/ave-mitigations.json`, validated by `schemas/bawbel-ave-mitigations-v1.json`
@@ -796,12 +803,20 @@ the gate enforces it, and denials cite the AVE ID back (Section 6.2).
 Earlier revisions of this section specified an AVE schema 1.2 that added
 `provenance_vector`, `trifecta_profile`, and `capability_mitigation` to AVE records, a
 migration of the 51 records then published, and a PiranhaDB `?schema=` switch. AVE took a
-different path. Schema 1.1.0 carries `provenance_vector` and `trifecta_profile` as
-optional fields (87 of 87 and 77 of 87 records on 2026-10-18), `capability_mitigation`
-stayed out of the standard, and PiranhaDB is offline. The gate's vendored
-`schemas/ave-1.2.json`, `SCHEMA_AVE_VERSION_SUPPORTED = "1.2"` in `_const.py`,
-`scripts/migrate_ave_v1_2.py`, and the 1.2-shaped test corpus predate this section and
-are brought in line by implementation work (#75).
+different path. Its schemas from 1.1.0 on carry `provenance_vector` and `trifecta_profile`
+as optional fields, and `capability_mitigation` is in none of them. On 2026-11-17 all 89
+records in AVE's `dist/ave-records-latest.json` (85 `active`, 4 `rejected`) are schema
+1.3.0: 89 carry `provenance_vector`, 77 carry `trifecta_profile`, and none carries
+`capability_mitigation`. Relative to 1.1.0, schema 1.3.0 adds `merged_into`,
+`rejection_reason`, and the `merged` and `rejected` status values, and changes neither the
+`provenance_vector` nor the `trifecta_profile` definition. PiranhaDB is offline.
+
+AVE does publish a schema numbered 1.2.0. It is not the 1.2 this section used to specify.
+The gate's vendored `schemas/ave-1.2.json` is a different, smaller schema that shares the
+number: its `$id` is `https://schemas.bawbel.io/ave/1.2.json`, and it is the gate's own
+earlier draft, not an AVE publication. That file, `SCHEMA_AVE_VERSION_SUPPORTED = "1.2"`
+in `_const.py`, `scripts/migrate_ave_v1_2.py`, and the 1.2-shaped test corpus predate this
+section and are brought in line by implementation work (#75).
 
 ### 9.3 Scoring interaction
 
@@ -910,8 +925,9 @@ The concrete stanza source and `review_status` semantics are in
   fork it? current position: inherit, monotone); manifest signing identity for
   manifests that live only in an org's own repository (sigstore keyless vs org PKI);
   whether `learn synthesize` should emit `trifecta` flags at all or always defer to a
-  curated server classification DB; how AVE 1.1.0 `provenance_vector.entry_class` tokens
-  map to gate provenance classes (Section 9.1).
+  curated server classification DB; how AVE 1.3.0 `provenance_vector.entry_class` tokens
+  map to gate provenance classes (Section 9.1); whether `harden --ave` should refuse an AVE
+  ID whose record is not `active` (Section 9.1).
 - **Proposed:** manifest signing identity for manifests distributed through
   bawbel-registry (bawbel-registry `docs/adr/0002-signing-identity.md`). The registry
   signs one index with sigstore keyless signing from a gated GitHub Actions workflow;
