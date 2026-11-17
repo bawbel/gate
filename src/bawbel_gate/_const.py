@@ -55,6 +55,10 @@ TRIFECTA_LEGS: tuple[str, ...] = (
 JSONRPC_DENY_CODE = -32031
 JSONRPC_METHOD_NOT_FOUND = -32601  # JSON-RPC 2.0 section 5.1; see DESIGN.md 3.3
 
+# --- MCP handshake (see DESIGN.md 3.3) ---
+MCP_PROTOCOL_VERSION = "2025-06-18"  # advertised to the host and sent to every upstream
+MCP_PEER_NAME = "bawbel-gate"  # serverInfo.name to the host, clientInfo.name to each upstream
+
 # --- Deny reasons: closed set (see DESIGN.md 6.2, docs/LANGUAGE.md) ---
 REASON_NO_GRANT = "no_grant"
 REASON_CONDITION_FAILED = "condition_failed"
