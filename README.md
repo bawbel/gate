@@ -450,9 +450,6 @@ the session, which ends when the client disconnects.
 
 ### Not yet supported
 
-- Upstream servers that validate the MCP handshake. The gate sends `initialize` with empty
-  `params` and no `notifications/initialized`. Servers built on the official MCP Python
-  SDK reject that handshake, and the gate then exposes none of their tools ([#27](https://github.com/bawbel/gate/issues/27)).
 - MCP methods other than `initialize`, `tools/list`, and `tools/call`. They return
   `-32601`, and the gate advertises only the `tools` capability, so resources and prompts
   are not reachable through the gate (DESIGN.md 3.3).

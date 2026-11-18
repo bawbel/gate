@@ -140,8 +140,12 @@ class TestHostNotificationsAreNotForwarded:
         sent, _, received = _session(tmp_path, notifications)
 
         assert [m["id"] for m in sent] == [1], "only the initialize request gets a response"
-        forwarded = {m.get("method") for m in received}
-        assert forwarded.isdisjoint(HOST_NOTIFICATIONS)
+        # notifications/initialized is also the gate's own message: it sends one, itself,
+        # between initialize and tools/list (DESIGN.md 3.3). A notification forwarded from
+        # the host would therefore be an extra entry, so this asserts the whole sequence.
+        assert [m.get("method") for m in received] == [
+            "initialize", "notifications/initialized", "tools/list",
+        ], "the upstream must get the gate's handshake and no notification from the host"
 
 
 # ---------------------------------------------------------------------------

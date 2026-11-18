@@ -11,6 +11,15 @@ itemized here; this file picks up from that baseline.
 
 ## [Unreleased]
 
+### Fixed
+
+- The gate completes the MCP handshake with each upstream server (#27). `initialize`
+  carries `protocolVersion`, `capabilities` and `clientInfo`, and
+  `notifications/initialized` follows the response. A server that answers `initialize`
+  with an error is suspended: its tools are not listed and calls to it are denied. A
+  server built on the official MCP Python SDK now lists its tools through the gate
+  (tested with mcp 1.30.0 and 2.3.0).
+
 ## [0.1.1] - 2026-10-12
 
 README and metadata fixes for the PyPI project page. No code changes.

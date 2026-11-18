@@ -73,6 +73,7 @@ dev = [
     "mypy>=1.10",
     "types-PyYAML",
     "types-jsonschema",
+    "mcp>=1.23",  # tests/integration/test_sdk_handshake.py runs the gate against an SDK server
 ]
 ops = [
     "opentelemetry-sdk>=1.20",
