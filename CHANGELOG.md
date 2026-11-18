@@ -11,6 +11,12 @@ itemized here; this file picks up from that baseline.
 
 ## [Unreleased]
 
+### Added
+
+- `bawbel-gate lint` prints a `W-UNENFORCED` warning for each `subject.binary_integrity`
+  and each `integrity_watch` entry of kind `binary` or `remote_resource`. The schema
+  accepts them and the gate does not enforce them (DESIGN.md 2.2, #42). A warning does not
+  change the exit code.
 ### Fixed
 
 - The gate completes the MCP handshake with each upstream server (#27). `initialize`

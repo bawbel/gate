@@ -128,6 +128,12 @@ INTEGRITY_KIND_TOOL_SCHEMA = "tool_schema"
 INTEGRITY_KIND_BINARY = "binary"
 INTEGRITY_KIND_REMOTE_RESOURCE = "remote_resource"
 
+# --- Lint warnings (see DESIGN.md 2.2, 11.5) ---
+LINT_WARN_UNENFORCED = "W-UNENFORCED"
+LINT_UNENFORCED_ISSUE = 42  # tracking issue named in the warning
+# integrity_watch kinds the schema accepts and the gate does not enforce
+UNENFORCED_WATCH_KINDS = (INTEGRITY_KIND_BINARY, INTEGRITY_KIND_REMOTE_RESOURCE)
+
 # --- Alertable event classes (see DESIGN.md 8.5) ---
 # Dot-notation names as emitted to OTel / CEF / syslog.
 ALERT_DRIFT_DETECTED = "gate.drift.detected"
