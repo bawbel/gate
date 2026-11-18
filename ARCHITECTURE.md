@@ -241,12 +241,14 @@ API with schema negotiation, a per-record mitigation endpoint, and posture queri
 
 MCP server exposing scanner and AVE lookups to agents themselves, so an agent can
 check a dependency or server card mid-task. It is not read-only or egress-free:
-`scan_server_card` fetches a URL the caller supplies, the AVE tools call the AVE API,
-the scan tools read a local path when given one, and `accept_finding` writes a
-suppression into a file.
+`scan_server_card` fetches a URL the caller supplies, the AVE tools call the PiranhaDB
+API at `api.piranha.bawbel.io` (the host does not resolve, so those tools report
+PiranhaDB as unavailable), the scan tools read a local path when given one, and
+`accept_finding` writes a suppression into a file.
 
-- **Consumes:** AVE records (the AVE API, with the published AVE corpus as fallback;
-  bawbel/bawbel-mcp#21); the `bawbel` CLI, run as a subprocess.
+- **Consumes:** the PiranhaDB API (offline); the `bawbel` CLI, run as a subprocess.
+  bawbel/bawbel-mcp#21, not merged, moves the AVE lookups to the AVE API with the
+  published AVE corpus as fallback.
 - **Produces:** lookup/scan tools over MCP.
 - **Interface:** MCP. No capability manifest ships with it yet.
 
