@@ -166,9 +166,20 @@ Host to gate:
 | Any other request: `resources/*`, `prompts/*`, `completion/complete`, `logging/setLevel`, `ping` | JSON-RPC `-32601`. Not forwarded. |
 | Notification (no `id`) | Dropped. Not forwarded, not answered. |
 
-Gate to upstream: `initialize` and `tools/list` during `VERIFY`, then `tools/call` for
-calls that resolve to `allow` or to a granted `approve`. The only other messages the
-gate sends upstream are the refusals below.
+Gate to upstream: during `VERIFY`, for each server in turn, `initialize`, then
+`notifications/initialized`, then `tools/list`. After `VERIFY`, `tools/call` for calls
+that resolve to `allow` or to a granted `approve`. The only other messages the gate
+sends upstream are the refusals below.
+
+The `initialize` request carries `protocolVersion` (the value the gate returns in its own
+`initialize` result), `capabilities: {}`, and `clientInfo` with `name` `bawbel-gate` and
+`version` the installed package version. The gate sends `notifications/initialized`, which
+has no `id`, once per server, after it has read the `initialize` response and only when
+that response is a result object. If the response is an error, or its result is not an
+object, the server is suspended (6.2): the gate sends it no `notifications/initialized` and
+no `tools/list`, its tools are omitted from the merged `tools/list` (3.2), and in enforce
+mode a `tools/call` to it is denied. The gate writes one line naming the server to stderr.
+It repeats none of the upstream's error text on stdout or stderr.
 
 Upstream to gate: after each request, the gate reads until the response whose `id`
 matches the request in value and type.
