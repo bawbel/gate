@@ -1,8 +1,8 @@
 """The MCP multiplexer request loop. See DESIGN.md 3.3, 6.2.
 
 run_enforce() and run_learn() are the two blocking entry points cli.py's `serve`
-command drives. Both spawn every configured upstream server, do the tools/list
-handshake, then loop reading JSON-RPC from the host: run_enforce() routes every
+command drives. Both spawn every configured upstream server, do the initialize and
+tools/list handshake, then loop reading JSON-RPC from the host: run_enforce() routes every
 tools/call through the policy decision pipeline (policy/engine.py) before ever
 forwarding upstream; run_learn() forwards everything unconditionally and records
 observations for `learn report` / `learn synthesize`.
@@ -40,6 +40,8 @@ from bawbel_gate._const import (
     EVENT_SESSION_END,
     EVENT_SESSION_START,
     JSONRPC_METHOD_NOT_FOUND,
+    MCP_PEER_NAME,
+    MCP_PROTOCOL_VERSION,
     REASON_DRIFT_SUSPENDED,
     REASON_NO_GRANT,
     TRIFECTA_PRIVATE_DATA,
@@ -139,18 +141,21 @@ def _bootstrap(cfg: GateConfig, console_state: ConsoleState | None, *, enforce: 
         procs[server_cfg.name] = proc
         call_ids[server_cfg.name] = itertools.count(3)
 
-        _send_and_recv(
-            proc, server_cfg.name,
-            {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
-        )
-        tools_resp = _send_and_recv(
-            proc, server_cfg.name,
-            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
-        )
-        live_tools = tools_resp.get("result", {}).get("tools", [])
+        live_tools: list[dict] = []
+        if _handshake(proc, server_cfg.name):
+            tools_resp = _send_and_recv(
+                proc, server_cfg.name,
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+            )
+            live_tools = tools_resp.get("result", {}).get("tools", [])
 
-        if enforce and manifest.tool_schema_integrity:
-            _check_drift(manifest, server_cfg.name, live_tools, session, writer)
+            if enforce and manifest.tool_schema_integrity:
+                _check_drift(manifest, server_cfg.name, live_tools, session, writer)
+        else:
+            # Fail closed (DESIGN.md 3.3): a server that refused the handshake is suspended,
+            # so none of its tools are listed and tools/call to it is denied, not forwarded.
+            session.suspend_server(server_cfg.name)
+            warn(f"upstream {server_cfg.name}: initialize failed, server suspended")
 
         if console_state is not None:
             console_state.manifests[server_cfg.name] = manifest
@@ -181,6 +186,31 @@ def _bootstrap(cfg: GateConfig, console_state: ConsoleState | None, *, enforce: 
         session=session, manifests=manifests, procs=procs, call_ids=call_ids,
         merged_tools=merged_tools, writer=writer,
     )
+
+
+def _handshake(proc: subprocess.Popen, server: str) -> bool:
+    """MCP initialize, then notifications/initialized. False when the upstream refused.
+
+    The notification goes out once, after the initialize response has been read, and only
+    when that response is a result. A server that answers with an error, or with anything
+    but an object result, has not completed the handshake: nothing more is sent to it.
+    The upstream's own error text is not repeated anywhere (DESIGN.md 3.3).
+    """
+    response = _send_and_recv(
+        proc, server,
+        {
+            "jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "params": {
+                "protocolVersion": MCP_PROTOCOL_VERSION,
+                "capabilities": {},
+                "clientInfo": {"name": MCP_PEER_NAME, "version": _pkg_version("bawbel-gate")},
+            },
+        },
+    )
+    if "error" in response or not isinstance(response.get("result"), dict):
+        return False
+    write_message(proc.stdin, {"jsonrpc": "2.0", "method": "notifications/initialized"})
+    return True
 
 
 def _check_drift(
@@ -397,8 +427,8 @@ def _initialize_result(request_id) -> dict:
         "jsonrpc": "2.0",
         "id": request_id,
         "result": {
-            "protocolVersion": "2025-06-18",
-            "serverInfo": {"name": "bawbel-gate", "version": _pkg_version("bawbel-gate")},
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "serverInfo": {"name": MCP_PEER_NAME, "version": _pkg_version("bawbel-gate")},
             "capabilities": {"tools": {}},
         },
     }
