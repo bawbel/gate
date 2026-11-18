@@ -38,7 +38,7 @@ versioned, public interface. No layer reaches around another.
 │ LAYER 2   bawbel-scanner                 [LIVE v1.3.0] │     │        candidates
 │           static detection: CLI, pre-commit, CI        │     │           │
 ├────────────────────────────────────────────────────────┤     │           │
-│ LAYER 1   AVE                       [LIVE, 87 records] │     ▼           │
+│ LAYER 1   AVE                                   [LIVE] │     ▼           │
 │           the standard: behavioral vulnerability       │                 │
 │           classes for agentic systems, AIVSS-scored    │ ────────────────┘
 └────────────────────────────────────────────────────────┘
@@ -60,7 +60,7 @@ planned paths:
 ```mermaid
 flowchart TB
     subgraph L1["Layer 1 · the standard"]
-        AVE["AVE<br/>schema 1.2 · 51 records · LIVE"]
+        AVE["AVE<br/>aveproject/ave · LIVE"]
     end
     subgraph L3["Layer 3 · serving"]
         PDB["PiranhaDB<br/>OFFLINE · host does not resolve"]
@@ -151,8 +151,8 @@ flowchart LR
     B -.->|"audit evidence"| R
 ```
 
-Status: AVE records do not carry `capability_mitigation` yet (0 of 87 on aveproject/ave
-main, 2026-10-18), so the record-to-stanza step is planned. Today `harden --ave` reads
+Status: AVE records do not carry `capability_mitigation` yet (no published AVE schema
+defines it), so the record-to-stanza step is planned. Today `harden --ave` reads
 stanzas from gate's own `mitigations/ave-mitigations.json` (2 entries).
 
 ### Flow D · Telemetry: evidence, upward
@@ -186,13 +186,13 @@ implemented (DESIGN.md 14.3). See the bawbel-hub project entry below.
 Each project: what it is, what it consumes, what it produces, and the interface it is
 held to.
 
-### ave (Layer 1, independent project aveproject/ave; live: schema 1.1.0, 87 records)
+### ave (Layer 1, independent project aveproject/ave; live)
 
 The standard, governed separately from Bawbel. CWE-shaped behavioral class definitions
-for agentic-system vulnerabilities, scored with OWASP AIVSS v0.8. Records carry a
-provenance vector (where in the context supply chain the class enters; 87 of 87) and a
-trifecta profile (which legs make it exploitable; 77 of 87). The executable mitigation
-stanza (`capability_mitigation`) is defined but populated in 0 of 87.
+for agentic-system vulnerabilities, scored with OWASP AIVSS v0.8. Records can carry a
+provenance vector (where in the context supply chain the class enters) and a trifecta
+profile (which legs make it exploitable). The executable mitigation stanza
+(`capability_mitigation`) is not part of any published AVE schema.
 
 - **Consumes:** research, incident reports, fleet deny patterns (Flow D).
 - **Produces:** versioned JSON records; JSON Schemas for records and capability
