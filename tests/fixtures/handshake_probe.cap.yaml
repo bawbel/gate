@@ -1,0 +1,20 @@
+schema: bawbel/capability-manifest/v1
+subject:
+  kind: mcp-server
+  name: probe
+  transport: stdio
+
+provenance_class: tool.response.probe
+instruction_authority: none
+
+trifecta:
+  private_data: false
+  untrusted_content: false
+  external_comms: false
+
+grants:
+  tools:
+    - name: echo
+      effect: allow
+    - name: "*"
+      effect: deny

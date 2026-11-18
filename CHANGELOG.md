@@ -17,6 +17,14 @@ itemized here; this file picks up from that baseline.
   and each `integrity_watch` entry of kind `binary` or `remote_resource`. The schema
   accepts them and the gate does not enforce them (DESIGN.md 2.2, #42). A warning does not
   change the exit code.
+### Fixed
+
+- The gate completes the MCP handshake with each upstream server (#27). `initialize`
+  carries `protocolVersion`, `capabilities` and `clientInfo`, and
+  `notifications/initialized` follows the response. A server that answers `initialize`
+  with an error is suspended: its tools are not listed and calls to it are denied. A
+  server built on the official MCP Python SDK now lists its tools through the gate
+  (tested with mcp 1.30.0 and 2.3.0).
 
 ## [0.1.1] - 2026-10-12
 

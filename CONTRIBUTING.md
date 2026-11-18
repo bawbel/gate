@@ -154,8 +154,11 @@ preserves behavior), say so in the PR and explain why.
   submit the contribution under this project's license. PRs with unsigned commits
   are not merged.
 
-### Release rule
+### Merge method
 
+- A feature PR into `develop` is squash-merged, except a change under `policy/`, `taint/`,
+  `audit/` or `integrity/`, which is not squashed (see
+  [Property test before implementation](#property-test-before-implementation)).
 - A promotion from `develop` to `main` is merged with a merge commit, never a squash.
 - A back-merge of `main` into `develop` is merged with a merge commit, never a squash.
 
