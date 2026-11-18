@@ -27,9 +27,9 @@ versioned, public interface. No layer reaches around another.
 │ LAYER 4   bawbel Registry                    [PLANNED] │     │           │
 │           reviewed manifests + integrity pins          │     │           │
 ├────────────────────────────────────────────────────────┤     │           │
-│ LAYER 3   PiranhaDB                             [LIVE] │     │           │
-│           api.piranha.bawbel.io                        │     │           │
-│           queryable AVE corpus, mitigation endpoint    │     │           │
+│ LAYER 3   PiranhaDB                          [OFFLINE] │     │           │
+│           hosted API offline (host does not resolve)   │     │           │
+│           corpus: api.aveproject.org, an AVE service   │     │           │
 ├────────────────────────────────────────────────────────┤     ▼           │
 │ LAYER 2.5 bawbel-gate                    [alpha 0.1.0] │  classes     findings
 │           runtime enforcement: manifests, taint,       │  → rules     → decisions
@@ -63,7 +63,7 @@ flowchart TB
         AVE["AVE<br/>schema 1.2 · 51 records · LIVE"]
     end
     subgraph L3["Layer 3 · serving"]
-        PDB["PiranhaDB<br/>api.piranha.bawbel.io · LIVE"]
+        PDB["PiranhaDB<br/>OFFLINE · host does not resolve"]
     end
     subgraph L2["Layers 2 / 2.5 · detection and enforcement"]
         SCN["bawbel-scanner<br/>v1.3.0 · LIVE"]
