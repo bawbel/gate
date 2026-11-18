@@ -1,0 +1,20 @@
+schema: bawbel/capability-manifest/v1
+subject:
+  kind: mcp-server
+  name: unenforced-binary
+  transport: stdio
+  binary_integrity: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+provenance_class: tool.response.example
+instruction_authority: none
+
+trifecta:
+  private_data: false
+  untrusted_content: false
+  external_comms: false
+
+grants:
+  tools:
+    - name: get_item
+      effect: allow
+    - name: "*"
+      effect: deny

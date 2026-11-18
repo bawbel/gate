@@ -13,6 +13,8 @@ from bawbel_gate._const import (
     CONSOLE_DEFAULT_PORT,
     HUB_DEFAULT_HOST,
     HUB_DEFAULT_PORT,
+    LINT_UNENFORCED_ISSUE,
+    LINT_WARN_UNENFORCED,
 )
 
 
@@ -226,6 +228,7 @@ def lint(
     """Validate manifests in MANIFEST_DIR against the capability-manifest schema."""
     import yaml as _yaml
     from bawbel_gate._schemas import schema_capability_manifest
+    from bawbel_gate.lint_checks import unenforced_declarations
     import jsonschema
 
     cap_schema = schema_capability_manifest()
@@ -241,6 +244,13 @@ def lint(
             for e in errs:
                 click.echo(f"  {e.json_path}: {e.message}")
             continue
+
+        # Warn only. See DESIGN.md 11.5: a warning never changes the exit code.
+        for declaration in unenforced_declarations(raw):
+            click.echo(
+                f"warn {manifest_file.name}: {LINT_WARN_UNENFORCED} {declaration} is declared"
+                f" and not enforced (DESIGN.md 2.2, issue #{LINT_UNENFORCED_ISSUE})"
+            )
 
         if forbid_effect:
             for grant in raw.get("grants", {}).get("tools", []):
