@@ -41,7 +41,6 @@ taint tracking, multi-agent delegation chains. See Section 10.
 | T2 | Data exfiltration through tool arguments (PR bodies, comments, URLs) | argument guards: secret scan, byte cap, arg conditions |
 | T3 | Tool poisoning via mutated tool descriptions (rug pull) | `tool_schema_integrity` pinning, drift suspension |
 | T4 | Over-permissioned servers (calls outside reviewed surface) | default-deny grants |
-| T5 | Post-install mutation of remote content (server cards, fetched policy docs) | integrity snapshots, semantic diff, grant downgrade |
 | T6 | Silent trifecta accumulation across a long session | monotone trifecta flags, mandatory approval on third leg |
 
 ### 2.2 Not defended
@@ -53,6 +52,13 @@ taint tracking, multi-agent delegation chains. See Section 10.
 - Covert channels within a single allowed tool's legitimate argument space below the
   guard thresholds.
 - Compromise of the machine running bawbel-gate itself.
+- **T5**, post-install mutation of remote content (server cards, fetched policy docs)
+  and of a server binary. The schema accepts `subject.binary_integrity` and
+  `integrity_watch` entries of kind `binary` and `remote_resource` (4.2). They are
+  declared in the schema, not enforced: the loader parses `integrity_watch`, no check
+  acts on it, and nothing reads `binary_integrity`. Section 8.2 is the intended design,
+  not the current behavior. Tracked in #42. `bawbel-gate lint` warns when a manifest
+  declares one of them (11.5).
 
 ### 2.3 Design commitments
 
@@ -684,6 +690,8 @@ LF, arrays order-preserved, then sha256.
 
 ### 8.2 Remote resource watch
 
+Not enforced: see 2.2 and #42. This section is the intended design.
+
 `integrity_watch` entries with `kind: remote_resource` generalize the pattern to
 server cards and any fetched document a deployment treats as quasi-static. Snapshot at
 grant time, re-fetch per policy, diff. `diff: semantic` uses structural JSON diff with
@@ -945,6 +953,12 @@ operator must pass `--allow-unreviewed` explicitly to proceed with an `llm_draft
 review is the failure the gate exists to prevent; the default is refusal, not a warning.
 The concrete stanza source and `review_status` semantics are in
 `BAWBEL_GATE_MITIGATIONS_SPEC.md` Section 3.
+
+`lint` reports a warning with code `W-UNENFORCED` for each declaration of a field the gate
+does not enforce (2.2): `subject.binary_integrity`, or an `integrity_watch` entry whose
+`kind` is `binary` or `remote_resource`. There is one warning per declaration, and it names
+the field and #42. A warning does not change the exit code. A manifest with no such
+declaration gets no warning. The warning is removed when the field is enforced.
 
 ## 12. Roadmap and open questions
 
