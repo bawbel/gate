@@ -2,7 +2,7 @@
 
 **Document:** ARCH-ECO-001 · rev 2026-07
 **Supersedes:** the five-layer sketch in PRODUCT.md
-**Normative companions:** bawbel-gate DESIGN.md, AVE schema 1.2
+**Normative companions:** bawbel-gate DESIGN.md, the AVE record schema (aveproject/ave)
 
 ---
 
@@ -198,7 +198,7 @@ profile (which legs make it exploitable). The executable mitigation stanza
 - **Produces:** versioned JSON records; JSON Schemas for records and capability
   manifests.
 - **Interface:** git repo (github.com/aveproject/ave) +
-  `schema/ave-record-1.1.0.schema.json`; site at aveproject.org.
+  the record schemas under `schema/`; site at aveproject.org.
 - **Strategic gate:** second independent implementer before OWASP/MITRE outreach.
 
 ### bawbel-scanner (Layer 2, live: v1.3.0, PyPI)
