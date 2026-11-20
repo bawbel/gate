@@ -151,9 +151,9 @@ flowchart LR
     B -.->|"audit evidence"| R
 ```
 
-Status: AVE records do not carry `capability_mitigation` yet (no published AVE schema
-defines it), so the record-to-stanza step is planned. Today `harden --ave` reads
-stanzas from gate's own `mitigations/ave-mitigations.json` (2 entries).
+Status: no published AVE schema defines `capability_mitigation`, so AVE records do not
+carry mitigation stanzas. The gate keeps them in its own mitigations map: `harden --ave`
+reads `mitigations/ave-mitigations.json`, keyed by AVE ID (DESIGN.md 9.1).
 
 ### Flow D · Telemetry: evidence, upward
 
