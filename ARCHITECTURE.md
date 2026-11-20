@@ -114,9 +114,9 @@ field report ─────▶ (JSON, schema ──────▶ (git) ──
 ```
 
 Git is the write path; PiranhaDB is read-only serving. A record is not "published"
-until it validates against `schemas/ave-1.2.json` in CI, including cross-validation of
-`capability_mitigation.manifest_stanza` against the capability-manifest schema. Schema
-negotiation (`?schema=1.1|1.2`) keeps old consumers unbroken.
+until it validates against `schemas/ave-1.2.json` in CI. The record carries no mitigation
+stanza; those live in the gate's own map (Flow C). Schema negotiation (`?schema=1.1|1.2`)
+keeps old consumers unbroken.
 
 ### Flow B · Detection: static, pre-deployment
 
@@ -133,18 +133,20 @@ ships a vendored corpus snapshot for air-gapped runs.
 ### Flow C · Enforcement loop: the closed loop that is the product thesis
 
 ```
-AVE record ──────────▶ bawbel-gate ──────────▶ capability ──────────▶ gate ─────▶ blocked attack,
-           mitigation  harden --ave  merge +   manifest    load +     runtime     deny cites the
-           stanza                    lint      (git)       pin                    AVE ID back
+AVE ID ──────────────▶ bawbel-gate ──────────▶ capability ──────────▶ gate ─────▶ blocked attack,
+           mitigations harden --ave  merge +   manifest    load +     runtime     deny cites the
+           map lookup                lint      (git)       pin                    AVE ID back
 ```
 
-Knowledge becomes policy mechanically: the scanner detects the class, the record emits
-the stanza, the gate enforces it, and the denial names the record that caused it.
+Knowledge becomes policy mechanically: the scanner detects the class, the gate's
+mitigations map supplies the stanza for that AVE ID, the gate enforces it, and the
+denial names the record that caused it.
 Taxonomy, detection, enforcement: all three layers owned and cross-referenced.
 
 ```mermaid
 flowchart LR
-    R["AVE record<br/>capability_mitigation"] -->|"stanza"| H["bawbel-gate<br/>harden --ave"]
+    R["AVE record<br/>ave_id"] -->|"AVE ID"| H["bawbel-gate<br/>harden --ave"]
+    S["gate mitigations map<br/>keyed by AVE ID"] -->|"stanza"| H
     H -->|"merge + lint"| M["capability manifest<br/>in git, reviewed MR"]
     M -->|"load + pin"| G["gate runtime"]
     G -->|"deny / approve"| B["blocked attack<br/>-32031 cites the AVE ID"]
@@ -367,8 +369,8 @@ flowchart TB
 ```
 draft record (JSON)
   └─▶ schema validate      ave-1.2.json, draft 2020-12
-  └─▶ stanza cross-check   capability_mitigation.manifest_stanza validates against
-                           capability-manifest/v1
+  └─▶ stanza cross-check   the gate's mitigations map entry for the record: its
+                           manifest_stanza validates against capability-manifest/v1
   └─▶ review               PR; triage sets provenance_vector + trifecta_profile
                            (never auto-guessed)
   └─▶ publish              CI deploy → PiranhaDB; ?schema=1.1 strips new fields
