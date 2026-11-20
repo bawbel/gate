@@ -90,12 +90,16 @@ class FleetStore:
     # --- Records ---
 
     def upsert_records(self, gate_id: str, records: list[dict[str, Any]]) -> None:
-        """Insert records, ignoring duplicates (idempotent by (gate_id, session_id, seq))."""
+        """Insert records, ignoring duplicates (idempotent by (gate_id, session_id, seq)).
+
+        The session counters move only for a record whose row was newly inserted,
+        so a replay changes neither the rows nor the counters (DESIGN.md 13.2, 14.4).
+        """
         with self._lock:
             for record in records:
                 session_id = record.get("session", "default")
                 seq = record.get("seq", 0)
-                self._conn.execute(
+                inserted = self._conn.execute(
                     """
                     INSERT OR IGNORE INTO audit_records
                         (gate_id, session_id, seq, event, effect, reason,
@@ -115,9 +119,10 @@ class FleetStore:
                         record.get("prev"),
                         json.dumps(record),
                     ),
-                )
+                ).rowcount == 1
                 self._upsert_chain_head(gate_id, session_id, record, cursor=None)
-                self._increment_session_state(gate_id, session_id, record)
+                if inserted:
+                    self._increment_session_state(gate_id, session_id, record)
 
             self._conn.execute(
                 "INSERT OR IGNORE INTO gates (gate_id, enrolled_at) VALUES (?, datetime('now'))",

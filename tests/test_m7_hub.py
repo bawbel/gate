@@ -65,6 +65,57 @@ def _make_records(gate_id: str, session_id: str, count: int = 3) -> list[dict]:
         os.unlink(path)
 
 
+def _make_mixed_records(session_id: str) -> list[dict]:
+    """Build one chain that moves every per-session counter at least once.
+
+    Counters after a single ingest: allow 1, approve 2, deny 1, trifecta_trips 1,
+    drift_events 1.
+    """
+    from bawbel_gate.audit.writer import AuditWriter
+    import tempfile, os
+    events = [
+        {"event": EVENT_CALL_DECIDED, "effect": EFFECT_ALLOW, "reason": "resolved"},
+        {"event": EVENT_CALL_DECIDED, "effect": EFFECT_APPROVE,
+         "reason": REASON_TRIFECTA_THIRD_LEG},
+        {"event": EVENT_CALL_DECIDED, "effect": EFFECT_APPROVE, "reason": "approval_required"},
+        {"event": EVENT_CALL_DECIDED, "effect": EFFECT_DENY, "reason": "no_grant"},
+        {"event": EVENT_DRIFT_DETECTED},
+    ]
+    with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as tf:
+        path = Path(tf.name)
+    try:
+        writer = AuditWriter(path)
+        for i, fields in enumerate(events):
+            writer.append({
+                "ts": f"2026-07-06T00:0{i}:00Z",
+                "session": session_id,
+                "server": "github",
+                "tool": "get_issue",
+                **fields,
+            })
+        return [
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    finally:
+        os.unlink(path)
+
+
+_MIXED_COUNTERS = {
+    "allow_count": 1,
+    "approve_count": 2,
+    "deny_count": 1,
+    "trifecta_trips": 1,
+    "drift_events": 1,
+}
+
+
+def _counters(store: FleetStore, gate_id: str) -> dict:
+    state = store.get_aggregate_state(gate_id)
+    return {k: state[k] for k in _MIXED_COUNTERS}
+
+
 # ---------------------------------------------------------------------------
 # Fleet state store
 # ---------------------------------------------------------------------------
@@ -226,6 +277,69 @@ class TestChainVerification:
         # r2 has its own chain; this is fine since it's a separate log
         result = process_batch("gate-1", r2, store)
         assert result.ok is True
+
+
+# ---------------------------------------------------------------------------
+# Replays leave the counters alone (DESIGN.md 13.2 dedup key, 14.4 pure replay)
+# ---------------------------------------------------------------------------
+
+class TestReplayCounters:
+    def test_first_ingest_counts_every_record_once(self):
+        store = FleetStore(":memory:")
+        process_batch("gate-1", _make_mixed_records("s1"), store)
+        assert _counters(store, "gate-1") == _MIXED_COUNTERS
+
+    def test_replayed_batch_leaves_counters_unchanged(self):
+        store = FleetStore(":memory:")
+        records = _make_mixed_records("s1")
+        for _ in range(3):
+            process_batch("gate-1", records, store)
+            assert store.record_count("gate-1", "s1") == len(records)
+            assert _counters(store, "gate-1") == _MIXED_COUNTERS
+
+    def test_replay_straight_into_the_store_leaves_counters_unchanged(self):
+        store = FleetStore(":memory:")
+        records = _make_mixed_records("s1")
+        store.upsert_records("gate-1", records)
+        store.upsert_records("gate-1", records)
+        assert _counters(store, "gate-1") == _MIXED_COUNTERS
+
+    def test_duplicate_record_inside_one_batch_counts_once(self):
+        store = FleetStore(":memory:")
+        records = _make_mixed_records("s1")
+        store.upsert_records("gate-1", records + records)
+        assert store.record_count("gate-1", "s1") == len(records)
+        assert _counters(store, "gate-1") == _MIXED_COUNTERS
+
+    def test_overlapping_resend_counts_only_the_new_records(self):
+        # Crash after a partial ack: the gate re-sends from its cursor, so the
+        # second batch repeats records 1 to 3 and adds records 4 and 5.
+        store = FleetStore(":memory:")
+        records = _make_mixed_records("s1")
+        process_batch("gate-1", records[:3], store)
+        process_batch("gate-1", records, store)
+        assert store.record_count("gate-1", "s1") == len(records)
+        assert _counters(store, "gate-1") == _MIXED_COUNTERS
+
+    def test_counters_after_replays_match_a_rebuild_from_the_rows(self):
+        store = FleetStore(":memory:")
+        records = _make_mixed_records("s1")
+        for _ in range(3):
+            process_batch("gate-1", records, store)
+        before = _counters(store, "gate-1")
+        store.rebuild_session_state("gate-1", "s1")
+        assert _counters(store, "gate-1") == before
+
+    def test_replay_in_one_session_does_not_touch_another(self):
+        store = FleetStore(":memory:")
+        s1 = _make_mixed_records("s1")
+        s2 = _make_mixed_records("s2")
+        process_batch("gate-1", s1, store)
+        process_batch("gate-1", s2, store)
+        process_batch("gate-1", s1, store)  # replay s1 only
+        assert store.get_session_state("gate-1", "s1")["allow_count"] == 1
+        assert store.get_session_state("gate-1", "s2")["allow_count"] == 1
+        assert store.get_aggregate_state("gate-1")["allow_count"] == 2
 
 
 # ---------------------------------------------------------------------------
