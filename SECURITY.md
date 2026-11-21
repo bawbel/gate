@@ -35,11 +35,15 @@ integrity pinning, learning mode, and the Console API (once shipped).
 deleted, inserted, or reordered without every hash after it being recomputed. It does not
 show:
 
-- **Records removed from the end.** The remaining chain is still valid. A head recorded
-  outside the log catches this.
-- **A log rewritten from the first record.** The chain uses no key, so whoever can write the
-  file can rebuild every hash and `audit verify` passes. A head recorded outside the log
-  before the rewrite catches this too. See
+- **Records removed from the end.** The remaining chain is still valid, and so is a log with
+  no records: a file with zero bytes prints `ok: 0 records, chain intact`. A path that does
+  not exist is an error, not a pass. A head recorded outside the log catches this, and so
+  does comparing the record count that `audit verify` prints with one recorded with the head.
+- **A log rewritten from any record onward.** The chain uses no key, so whoever can write the
+  file can rebuild every hash from the first record they change, and `audit verify` passes.
+  A head recorded outside the log catches a rewrite that starts at or before the record the
+  head names. A rewrite of records written after that head is caught only by a head recorded
+  after them. See
   [docs/adr/0001-audit-chain-construction.md](docs/adr/0001-audit-chain-construction.md).
 - **That the gate was running correctly when the records were written.** A record is what the
   gate wrote. It does not show that the decision it records was right, or that the gate was
