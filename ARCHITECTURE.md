@@ -84,7 +84,7 @@ flowchart TB
 
     AVE -->|"Flow A · publish via git + CI"| PDB
     PDB -->|"compiled rules"| SCN
-    PDB -->|"mitigation stanzas · harden --ave"| GATE
+    PDB -->|"AVE IDs · harden --ave"| GATE
     PDB --> IDE
     PDB --> BMCP
     SCN -->|"findings, SARIF"| CI
@@ -114,9 +114,9 @@ field report ─────▶ (JSON, schema ──────▶ (git) ──
 ```
 
 Git is the write path; PiranhaDB is read-only serving. A record is not "published"
-until it validates against `schemas/ave-1.2.json` in CI. The record carries no mitigation
-stanza; those live in the gate's own map (Flow C). Schema negotiation (`?schema=1.1|1.2`)
-keeps old consumers unbroken.
+until it validates against the AVE project's published record schema in CI. The record
+carries no mitigation stanza; those live in the gate's own map (Flow C). Schema
+negotiation (`?schema=1.1|1.2`) keeps old consumers unbroken.
 
 ### Flow B · Detection: static, pre-deployment
 
@@ -232,11 +232,11 @@ embedded console (v1.2).
 
 The hosted API at `api.piranha.bawbel.io` is offline: the host does not resolve. AVE
 records are served by `api.aveproject.org/records`. As built, it was a read-only corpus
-API with schema negotiation, a per-record mitigation endpoint, and posture queries.
+API with schema negotiation and posture queries. It served no mitigation stanzas: the
+gate keeps those in its own map (Flow C).
 
 - **Consumes:** ave repo on deploy (CI publishes validated records).
-- **Produces:** `GET /records`, `GET /records/{id}/mitigation`, `?schema=`,
-  `?trifecta=`.
+- **Produces:** `GET /records`, `?schema=`, `?trifecta=`.
 - **Interface:** HTTPS JSON; additive versioning, 1.1 default until v2.0.
 
 ### bawbel-mcp (Layer 2/3 edge, Glama listing)
@@ -260,8 +260,8 @@ IDE surface. Inline diagnostics from scanner findings while editing agent code a
 MCP configs; each diagnostic links to its AVE record.
 
 - **Consumes:** bawbel-scanner output (local invocation).
-- **Produces:** editor diagnostics, quick links, quick-fix hints where a stanza
-  exists.
+- **Produces:** editor diagnostics, quick links, and quick-fix actions to suppress a
+  finding, remove a suppression, or open its AVE record.
 - **Interface:** VS Code extension API; no network calls beyond corpus refresh.
 
 ### bawbel-integrations (Layer 2 edge, live)
@@ -368,28 +368,31 @@ flowchart TB
 
 ```
 draft record (JSON)
-  └─▶ schema validate      ave-1.2.json, draft 2020-12
-  └─▶ stanza cross-check   the gate's mitigations map entry for the record: its
-                           manifest_stanza validates against capability-manifest/v1
+  └─▶ schema validate      the AVE project's published record schema, draft 2020-12
   └─▶ review               PR; triage sets provenance_vector + trifecta_profile
                            (never auto-guessed)
   └─▶ publish              CI deploy → PiranhaDB; ?schema=1.1 strips new fields
                            for old consumers
-  └─▶ consume              scanner rule compile │ harden --ave stanza merge │
-                           IDE links │ MCP lookups
+  └─▶ consume              scanner rule compile │ IDE links │ MCP lookups
+
+the gate's side, keyed by the published AVE ID (the stanza is not in the record)
+  mitigations map entry
+  └─▶ stanza cross-check   its manifest_stanza validates against capability-manifest/v1
+  └─▶ consume              harden --ave stanza merge
 ```
 
 Rendered:
 
 ```mermaid
 flowchart LR
-    D["draft record<br/>JSON"] --> V["schema validate<br/>ave-1.2.json"]
-    V --> X["stanza cross-check<br/>vs capability-manifest/v1"]
-    X --> RV["PR review<br/>provenance + trifecta triaged by hand"]
+    D["draft record<br/>JSON"] --> V["schema validate<br/>AVE record schema"]
+    V --> RV["PR review<br/>provenance + trifecta triaged by hand"]
     RV --> P["publish<br/>CI → PiranhaDB"]
     P --> C1["scanner<br/>rule compile"]
-    P --> C2["gate<br/>harden --ave"]
     P --> C3["IDE links ·<br/>MCP lookups"]
+    P -->|"AVE ID"| M["gate mitigations map<br/>entry for the ID"]
+    M --> X["stanza cross-check<br/>vs capability-manifest/v1"]
+    X --> C2["gate<br/>harden --ave"]
 ```
 
 ### 4.3 Interface freeze points
@@ -397,7 +400,7 @@ flowchart LR
 | Interface | Version | Consumers held to it |
 |---|---|---|
 | ave record schema | 1.2 (additive over 1.1) | PiranhaDB, scanner, gate, IDE, second implementers |
-| capability-manifest | v1 | gate, registry (planned), AVE mitigation stanzas |
+| capability-manifest | v1 | gate, registry (planned), the gate's mitigations map |
 | Console API | DESIGN.md 13.1 | embedded console UI (single gate), hub's per-developer drill-down |
 | ingest protocol | DESIGN.md 13.2 (frozen via M6 stub) | bawbel-hub (M7, real), future platform (planned) |
 | SARIF findings | 2.1.0 | CI systems, GitLab/GitHub security tabs |
