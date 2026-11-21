@@ -1044,10 +1044,11 @@ Push-only, gate to platform. **No inbound connections to gates, ever.** This is 
 hard property, not a default: gates in bank networks must not require listening
 sockets reachable from outside the host.
 
-**Transport.** `POST /v1/gates/{gate_id}/records`, mTLS with a per-gate client
-certificate, `Content-Type: application/x-ndjson`, body is a batch of audit records
-in ascending `seq` per `(gate_id, session_id)`. Batching: flush at 200 records or
-2 s, whichever first.
+**Transport.** `POST /v1/gates/{gate_id}/records`, authenticated with the per-gate
+secret (14.3) as `Authorization: Bearer`, over TLS that the operator terminates in
+front of the hub, `Content-Type: application/x-ndjson`, body is a batch of audit
+records in ascending `seq` per `(gate_id, session_id)`. Batching: flush at 200 records
+or 2 s, whichever first.
 
 **Cursor and durability.** Records are durable in the local JSONL before any send
 (the JSONL is the outbound buffer; there is no second queue). The gate keeps
@@ -1119,7 +1120,7 @@ assembly plus identity, not new invention.
  10 x bawbel-gate (workstations)          bawbel-hub (one container)
  ┌─────────┐  audit records,   ┌───────────────────────────────────┐
  │ gate #1 │  NDJSON batches   │ ingest (13.2) ─▶ chain verify     │
- │  ...    │ ────mTLS push───▶ │      │                            │
+ │  ...    │ ────TLS push────▶ │      │                            │
  │ gate #10│                   │      ▼                            │
  └─────────┘                   │ replay ─▶ fleet state (Postgres   │
      ▲                         │            or SQLite)             │
@@ -1138,21 +1139,55 @@ not an architectural one.
 ### 14.3 Identity and enrollment
 
 - Each gate enrolls once: `bawbel-gate enroll --hub https://hub.internal:8443 --token <one-time>`.
-  The hub issues a per-gate mTLS client certificate; the certificate CN is the
-  `gate_id`. Enrollment tokens are single-use, minted by the hub CLI.
-- Attribution is structural: every audit record arrives on an authenticated channel
-  bound to one `gate_id`, and chains are verified per `(gate_id, session)`. There is
-  no self-reported identity anywhere in the pipeline.
+  The hub mints a per-gate secret and a `gate_id` and returns both in the response,
+  once. The hub stores a hash of the secret and not the secret. The gate stores both
+  locally with owner-only permissions.
+- Enrollment tokens are single-use, minted by an admin, and expire: the default
+  lifetime is 24 hours. An unused token can be revoked before it expires.
+- Ingest authenticates with the per-gate secret as `Authorization: Bearer <secret>`.
+  The hub takes the `gate_id` from the credential. The `{gate_id}` in the path of 13.2
+  is checked against it, and a mismatch is refused with 403. A value in the path or the
+  query string is never an identity.
+- Attribution is structural: every audit record arrives on a channel authenticated by
+  one gate's secret and bound to one `gate_id`, and chains are verified per
+  `(gate_id, session)`. There is no self-reported identity anywhere in the pipeline. A
+  per-gate secret identifies whoever holds it. It is not bound to a key pair that stays
+  on the machine, which is what the later mTLS step adds.
 - Developer display names map to `gate_id` in hub config; the hub never needs
   workstation credentials, directory integration, or agents beyond the gate itself.
   (SSO for console viewers is a v1.1 hub concern, not a gate concern.)
 
-**Implementation status: specified, not implemented.** The credential model above (the
-per-gate mTLS client certificate here and in the 13.2 transport) is not built. In the
-current code, ingest authenticates with the hub's shared admin token, `gate_id` is taken
-from the request path, and `hub serve` listens on plain HTTP. Until the per-gate
-credential ships, attribution is not structural. Single-use enrollment tokens are
-implemented. Tracked in [#49](https://github.com/bawbel/gate/issues/49).
+**Transport.** The hub serves plain HTTP and does not terminate TLS. The operator runs
+a TLS-terminating reverse proxy in front of it. The hub binds to loopback by default
+and refuses to start on any other address unless the operator has declared that TLS is
+in front of it. Without TLS in front, the per-gate secret and the admin credentials
+cross the network in clear text.
+
+**Roles and credential lifetime.**
+
+- `admin` mints and revokes enrollment tokens and rotates admin credentials. `viewer`
+  reads fleet state and the other read-only views (14.4) and can do nothing else: it
+  cannot mint or revoke a token, post records, or change any state. Neither role can
+  send anything toward a gate (14.6).
+- An admin credential has a finite lifetime and can be rotated without restarting the
+  hub. Starting the hub does not leave earlier admin credentials valid indefinitely,
+  and the hub removes expired credentials from its database.
+- No credential is accepted in a URL, in the path or in the query string.
+
+**mTLS later.** The model this section specified before, a per-gate client certificate
+issued by a hub-run CA with the certificate CN as the `gate_id`, is deferred, not
+dropped. It is a separate decision, recorded in its own ADR when it is taken.
+`docs/adr/0002-hub-per-gate-credential.md` records why the secret comes first.
+
+**Implementation status: specified, not implemented.** Nothing in the credential model
+above is built. In the current code, ingest authenticates with the hub's admin token,
+`gate_id` is taken from the request path, `hub serve` listens on plain HTTP on any
+address it is given, and the admin token is also accepted in the `?t=` query string.
+Admin tokens and enrollment tokens do not expire, and there is one role. `enroll`
+returns a `gate_id` that the gate does not keep, and the hub does not check that id on
+ingest. Until this ships, attribution is not structural. Single-use enrollment tokens
+are implemented. Tracked in [#49](https://github.com/bawbel/gate/issues/49) and
+[#179](https://github.com/bawbel/gate/issues/179).
 
 ### 14.4 Fleet state and console
 
