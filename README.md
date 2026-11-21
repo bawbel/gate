@@ -408,13 +408,17 @@ link on stderr. `posture` and `clear` default to `bawbel-audit.jsonl`, not to th
 `audit verify` needs the chain file and nothing else: no gate config, no manifests, and no
 access to the host that wrote the log. Anyone with a copy can replay it. From the file alone
 it detects an edited, deleted, inserted, or reordered record, and a record cut off mid-line.
-It does not detect records removed from the end of the file, or a log rewritten from the
-first record with every hash recomputed, because the chain uses no key. Both change the head,
-which is the `hash` of the last record. Record the head somewhere the party who can write the
-log cannot rewrite, and compare against it. [SECURITY.md](https://github.com/bawbel/gate/blob/main/SECURITY.md#limits-of-the-audit-chain)
+It does not detect records removed from the end of the file, or a log rewritten from any
+record onward with every later hash recomputed, because the chain uses no key. Both change
+the head, which is the `hash` of the last record. An emptied log also passes: a file with
+zero bytes, or only blank lines, prints `ok: 0 records, chain intact`. A path that does not
+exist is an error from the command, not a pass. Record the head somewhere the party who can
+write the log cannot rewrite, and compare against it. Record the record count with it, since
+an emptied log is shown only by the head or the count. [SECURITY.md](https://github.com/bawbel/gate/blob/main/SECURITY.md#limits-of-the-audit-chain)
 lists what the chain does not show.
 
-Read the head from the log:
+`audit verify` prints the record count and the file name, not the head. Read the head from
+the log with `audit tail`:
 
 ```bash
 bawbel-gate audit tail gate.audit.jsonl -n 1 | python3 -c 'import json,sys; print(json.load(sys.stdin)["hash"])'
@@ -440,6 +444,12 @@ grep -Fc '"hash":"<head>"' gate.audit.jsonl    # 1 if the anchored record is pre
 A count of 0 means the file was cut before that record or rewritten.
 [`tests/test_audit_third_party_verify.py`](https://github.com/bawbel/gate/blob/main/tests/test_audit_third_party_verify.py)
 runs each of these steps.
+
+A count of 1 covers only the log up to that record. Records written after the anchored one
+can be rewritten with every later hash recomputed, and `audit verify` still passes and the
+older head still matches. Only a head recorded after those records covers them, so record
+the head again as the log grows. Compare the count that `audit verify` prints with the one
+you recorded.
 
 `bawbel-gate clear --session ID --confirm --audit-log FILE` appends a `SESSION_CLEAR`
 record. It does not signal a running gate. Taint lives in the gate process and ends with
