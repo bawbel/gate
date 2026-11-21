@@ -177,11 +177,13 @@ console (13.1) and a team's hub (14) are two independent consumers of the same
 chain, not a pipeline; a deployment can run either, both, or neither. Recurring deny
 patterns across teams are the eventual pipeline for new AVE class candidates via a
 federated platform, which closes the loop back to Flow A, but that hop is planned,
-not required for the hub to deliver its value today.
+not required for the hub to deliver its value once gates send records.
 
 Status: the hub side of Flow D (ingest, per-session chain verification, fleet state) is
-implemented. The gate-side push and the per-gate mTLS channel are specified, not
-implemented (DESIGN.md 14.3). See the bawbel-hub project entry below.
+implemented, but it rejects a real gate audit file once it holds a second session: the
+gate chains records across sessions and the hub verifies each session from the genesis
+value (gate issue #159). The gate-side push and the per-gate mTLS channel are specified,
+not implemented (DESIGN.md 14.3). See the bawbel-hub project entry below.
 
 ## 3. Projects
 
@@ -303,9 +305,11 @@ console, 13.1) stays free and fully standalone; the hub is the paid line, drawn 
   enrollment via single-use token (implemented); gate identity via per-gate mTLS client
   cert (specified, not implemented).
 - **Status:** implemented on the hub side: ingest with per-session chain verification,
-  SQLite fleet state, single-use enrollment tokens, `GET /v1/fleet/state`. Not
+  SQLite fleet state, single-use enrollment tokens, `GET /v1/fleet/state`. Ingest rejects
+  a gate audit file once it holds a second session (gate issue #159). Not
   implemented: the gate-side sender, per-gate identity (ingest authenticates with the
-  hub's shared admin token, and `gate_id` comes from the request path), TLS, and
+  hub's shared admin token, and `gate_id` comes from the request path, so it accepts an
+  id that enrollment never issued; `enroll` leaves nothing on the gate), TLS, and
   enrollment token expiry.
 
 ### bawbel platform (Layer 5b, planned)
@@ -438,9 +442,10 @@ config.
   spans and six alertable event classes land in your existing collector.
 - **learning mode:** seven observed days synthesize a draft default-deny manifest per
   server; onboarding is a report review, not YAML authorship from scratch.
-- **bawbel-hub (once the team has more than one gate):** enroll each workstation
-  once (`bawbel-gate enroll --hub ...`); the fleet posture view and per-gate
-  config-drift flags replace checking each machine by hand.
+- **bawbel-hub (once the team has more than one gate; planned, gates do not send
+  records yet):** enroll each workstation once (`bawbel-gate enroll --hub ...`); the fleet
+  posture view and per-gate config-drift flags are meant to replace checking each machine
+  by hand. Today enrolling returns a `gate_id` and feeds the fleet view nothing.
 
 Touches: Flow C (deploy side), Flow D (collection).
 
@@ -465,7 +470,8 @@ framework row (DESIGN.md Appendix A: PCI DSS v4.0, ISO 27001, NIST, NBC TCRMG).
 - **fleet posture (bawbel-hub, DESIGN.md 14):** one view across the whole team once
   there is more than one gate: sessions, trifecta-locked count, denies, drift, and
   manifest hash per developer. The hub is read-only into every gate by design; it
-  reports the fleet's state, it does not command it.
+  reports the fleet's state, it does not command it. Planned: the view fills only once
+  gates send records, which they do not yet.
 
 Touches: Flows A, C, D end-to-end.
 

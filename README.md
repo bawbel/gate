@@ -477,7 +477,7 @@ Every command takes `--help`. `bawbel-gate --version` prints the installed versi
 | `audit tail FILE` | Prints the last audit records as JSONL | `-n`, `--lines N` (default 20); `-f`, `--follow` | |
 | `posture` | Prints an agent risk posture report from an audit log | `--audit-log PATH` (default `bawbel-audit.jsonl`, env `BAWBEL_AUDIT_LOG`); `--json` | |
 | `clear` | Appends a `SESSION_CLEAR` audit record for a session | `--session ID` (required); `--confirm` (required); `--audit-log PATH` (default `bawbel-audit.jsonl`) | Does not reach a running gate |
-| `enroll` | Enrolls this gate with a bawbel-hub | `--hub URL` (required); `--token TOKEN` (required) | Prints the assigned `gate_id` |
+| `enroll` | Redeems a single-use enrollment token at a bawbel-hub | `--hub URL` (required); `--token TOKEN` (required) | Prints the assigned `gate_id`. The gate stores nothing, and the hub does not check that id on ingest |
 | `hub serve` | Runs the bawbel-hub ingest service and fleet console | `--db PATH` (default `bawbel-hub.db`, env `BAWBEL_HUB_DB`); `--host` (default `127.0.0.1`, env `BAWBEL_HUB_HOST`); `--port` (default 8443, env `BAWBEL_HUB_PORT`) | Prints the admin token at startup |
 | `hub token new` | Mints a single-use enrollment token | `--db PATH` (default `bawbel-hub.db`, env `BAWBEL_HUB_DB`) | Pass the token to `enroll --token` |
 
@@ -564,12 +564,17 @@ client (`ingest/client.py`) is not wired into `serve`, so gates do not send reco
 Also not implemented: per-gate identity and TLS. Ingest authenticates with the hub's
 shared admin token (the one `hub serve` prints at startup), `gate_id` is taken from the
 request path, and `hub serve` listens on plain HTTP. DESIGN.md 14.3 specifies a per-gate
-mTLS client certificate. Enrollment tokens are single-use but do not expire.
+mTLS client certificate. Enrollment tokens are single-use but do not expire. `enroll`
+returns a `gate_id` and the gate keeps nothing from it, so ingest accepts a `gate_id` that
+enrollment never issued.
 
 - Ingest service (`POST /v1/gates/{gate_id}/records`): verifies the hash chain per
   session and stores records idempotently by `(gate_id, session_id, seq)`. A batch
   with a broken chain is rejected with HTTP 409 `chain_mismatch`; nothing from it is
-  stored.
+  stored. A gate's own audit file is rejected once it holds a second session: the gate's
+  writer chains records across sessions, and the hub verifies each session from the
+  genesis value, so the first record of the second session gets that 409
+  ([#159](https://github.com/bawbel/gate/issues/159)). A file with one session is accepted.
 - Fleet state store: SQLite, fully rebuildable from raw records.
 - Single-use enrollment tokens: `bawbel-gate hub token new`, then
   `bawbel-gate enroll --hub URL --token TOKEN`.
