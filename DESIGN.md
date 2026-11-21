@@ -222,6 +222,7 @@ subject:
   transport: stdio
   binary_integrity: "sha256:9f2a..."     # package/binary pin, optional but recommended
   tool_schema_integrity: "sha256:c41b..."# canonicalized tools/list pin, drives T3 defense
+  # component_sha256: "sha256:..."       # optional content hash of this version (4.3)
 
 provenance_class: tool.response.github   # label applied to everything this server emits
 instruction_authority: none              # none | advisory | full; only user.direct and
@@ -295,7 +296,8 @@ integrity_watch:
         "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"},
         "transport": {"enum": ["stdio", "http", "n/a"]},
         "binary_integrity": {"$ref": "#/$defs/sha256"},
-        "tool_schema_integrity": {"$ref": "#/$defs/sha256"}
+        "tool_schema_integrity": {"$ref": "#/$defs/sha256"},
+        "component_sha256": {"$ref": "#/$defs/sha256"}
       }
     },
     "provenance_class": {"$ref": "#/$defs/provenanceClass"},
@@ -478,6 +480,96 @@ Notes on the schema:
 - `instruction_authority` is enforced indirectly in v1: it selects which default taint
   rules the gate synthesizes when a manifest omits `taint_rules` (a component with
   `none` and `untrusted_content: true` gets the standard downgrade set injected).
+- `subject.component_sha256` is added by 4.3. It is optional, so every existing manifest
+  stays valid.
+
+### 4.3 Component identifier
+
+**Implementation status: specified, not implemented.** Tracked in
+[#182](https://github.com/bawbel/gate/issues/182).
+
+A scan attestation and a gate audit record name the same component the same way, so the
+question "was the component the gate enforced against the one that was scanned" can be
+answered offline, by tooling or by a person. The gate does not read attestations at
+runtime.
+
+**`component_id`** names a component and not a version of it. Its grammar is `kind:name`,
+or `kind:namespace/name` when the component has a namespace.
+
+- `kind` is `subject.kind`: `mcp-server`, `skill` or `subagent`.
+- `name` and `namespace` each match `^[a-z0-9][a-z0-9._-]{1,63}$`, the pattern of
+  `subject.name`.
+- The version is not part of the id. The hash below pins the version.
+- For an `mcp-server`, the namespace and name SHOULD be the server's name in the MCP
+  Registry when one exists, so that the id inherits a namespace that someone else
+  verifies. The id is a name. It is not proof of who owns the component.
+
+**`component_sha256`** is `sha256:` followed by 64 lowercase hex digits. It is the hash
+of this version of the component, by kind:
+
+| Kind | Input | Rule |
+|---|---|---|
+| `skill`, one file | the file | sha256 of the raw bytes. Line endings are not normalised. |
+| `skill`, a directory | the directory | the directory rule below |
+| `subagent` | its defining file or directory | the same as a `skill` |
+| `mcp-server` | the server's `tools/list` | the value `tool_schema_integrity` has for the same `tools/list` (8.1) |
+
+**Directory rule.**
+
+1. List the regular files under the directory, at any depth. Skip any path with a
+   component named `.git`. A symlink is not a regular file and is not listed. A symlink
+   that points outside the tree is rejected: no hash is produced.
+2. For each file take its path relative to the directory root, with `/` as separator and
+   no leading `./`, and the lowercase hex sha256 of its bytes. Line endings are not
+   normalised. A relative path that contains LF is rejected.
+3. Make one line per file: the hex digest, two spaces, the path as UTF-8.
+4. Sort the lines by the bytes of the path. Join them with LF. Add no trailing LF.
+5. `component_sha256` is `sha256:` and the lowercase hex sha256 of those bytes.
+
+A directory with no regular file hashes the empty byte string,
+`sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`. Sorting by the
+bytes of the UTF-8 path orders by Unicode code point.
+
+**Test vectors.** Each product asserts all three.
+
+```text
+skill, one file. Input bytes (LF line endings):
+  "# deploy-helper\n\nRun the deploy checklist.\n"
+sha256:3e4f9d42a720157471041b21132ff39dec9d93d2998f739af9883f5bffbe80db
+
+skill, a directory. Files, each with LF line endings, plus a .git/HEAD that is skipped:
+  SKILL.md            "# deploy-helper\n\nRun the deploy checklist.\n"
+  scripts/run.sh      "#!/bin/sh\necho ok\n"
+  notes/my notes.txt  "two words in the file name\n"
+Bytes that are hashed (two spaces after each digest, LF between lines, no trailing LF):
+  3e4f9d42a720157471041b21132ff39dec9d93d2998f739af9883f5bffbe80db  SKILL.md
+  483abf620d024fdb0c9274129be0de49fd3b409ecfaf14bc8bc7694e315d08f1  notes/my notes.txt
+  b4d644d4279594903f1a9911956432d9473041f2984fc6014c14d7402c7d126c  scripts/run.sh
+sha256:05f4af27fe1a930ba5f2ddfb6d29336e7f6e747ab55ff880e1b4730b1c17e728
+
+mcp-server. tools/list tools, in name order, canonical form of 8.1 and 8.6:
+  [{"description":"Read a ticket.","inputSchema":{"properties":{"id":{"type":"string"}},"type":"object"},"name":"get_ticket"},{"description":"Change a ticket.","inputSchema":{"properties":{"id":{"type":"string"},"status":{"type":"string"}},"type":"object"},"name":"update_ticket"}]
+sha256:09d296769d7a9fe21c3b0f21e34efd5d082f6c98404e4562889a2829d8001ed4
+```
+
+**Manifest.** `subject.component_sha256` is optional in `capability-manifest/v1`. A
+manifest without it stays valid. This section does not say whether a later version
+requires it.
+
+**Audit.** Records that carry `manifest_sha256` also carry `component_id` and, when the
+manifest has `subject.component_sha256`, `component_sha256` (8.6).
+
+**Mismatch.** When a manifest has `component_sha256` and the gate computes a different
+value for the component it serves, in enforce mode the gate fails closed: the server is
+suspended as for tool schema drift (6.2), its tools are left out of the merged
+`tools/list`, and a drift report is written. In observe mode (learning mode, 7.5) the
+gate warns and does not block, because that mode enforces nothing. Where the gate cannot
+compute the hash of a component, it does not compare. A mismatch between a scan
+attestation and a manifest is an operator finding. It is not a gate decision.
+
+**Not an identity system.** This is a content hash and a stable name. Signing, publisher
+attestation and key custody belong to the registry. The gate does not fetch or parse scan
+attestations.
 
 ## 5. Policy semantics
 
@@ -757,6 +849,10 @@ hash = "sha256:" + lowercase_hex(sha256(canonical_json(record minus hash) || utf
 - `prev` is concatenated as the UTF-8 bytes of its `sha256:<hex>` text (71 bytes), not
   as the raw 32-byte digest. The first record's `prev` is `sha256:` followed by 64
   zeros.
+
+Records that carry `manifest_sha256` also carry `component_id` and, when the manifest has
+`subject.component_sha256`, `component_sha256` (4.3). Both are ordinary fields of the
+record and are covered by `hash`. Specified, not implemented ([#182](https://github.com/bawbel/gate/issues/182)).
 
 Gate chains are not cross-verifiable with ACS v0.1.0 ContextEntry chains, which use
 JCS, drop both hash fields, and concatenate the raw previous digest.
