@@ -611,6 +611,7 @@ Events, exhaustively:
 | `RESPONSE_RECEIVED` | upstream | tag provenance, update taint + trifecta flags, hash payload |
 | `APPROVAL_GRANTED` / `APPROVAL_DENIED` / `APPROVAL_TIMEOUT` | approval channel | resume or reject pending call |
 | `DRIFT_DETECTED` | integrity verifier | suspend server per `on_drift` |
+| `BEHAVIOUR_DRIFT` | behaviour detector (18) | none: an alert only |
 | `SESSION_CLEAR` | operator CLI | reset taint, audit |
 | `SESSION_END` | transport close | final audit record, chain head printed |
 
@@ -729,6 +730,7 @@ Alertable event classes, emitted as structured log events regardless of exporter
 | `gate.secretscan.hit` | high | exfiltration attempt via arguments |
 | `gate.approval.timeout` | low | unattended agent hit a human gate |
 | `gate.chain.gap` | critical | audit log tamper indicator |
+| `gate.behaviour.drift` | medium | call pattern changed while the schema did not (18) |
 
 ### 8.6 Audit log
 
@@ -1192,6 +1194,88 @@ tooling, and the hub merely reports version skew.
 day: trivial for SQLite, comfortable for years in Postgres. Chain verification is
 sequential per session and cheap. The hub is stateless above its database; backup is
 `pg_dump` or copying one file. Ships as a single OCI image plus a compose file.
+
+## 18. Behavioural drift detection
+
+**Draft, specified, not implemented.** Tracked in
+[#186](https://github.com/bawbel/gate/issues/186). Alert-only in v1 (18.2) is the
+maintainer's provisional direction, not a final decision. Points marked **OPEN** list
+their options and choose none.
+
+### 18.1 What it is, and what it is not
+
+Integrity drift (8.1 to 8.3) means pinned content changed after review: a tool schema or
+a remote resource. Behavioural drift means a component whose schema is unchanged but
+whose calls have changed. The gate detects the first. It does not detect the second:
+`ops/posture.py` is a tally, not a detector.
+
+Behavioural drift is computed from structured JSON-RPC and from the audit record only. It
+never consults model output (2.3).
+
+### 18.2 Alert-only in v1 (provisional)
+
+Behavioural drift raises an alert. It changes no decision. It is not an input to the
+resolution of 5.2: it cannot lower an effect, suspend a server, or cause an approval
+prompt. 7.5 gives the reason. A control that prompts on routine change is routed
+around, and a bypassed control is worse than none, so a detector whose false positives
+cost a human decision would work against the approval budget.
+
+### 18.3 What an alert is
+
+An alert is two things, raised together:
+
+1. an audit record with `event: BEHAVIOUR_DRIFT`, appended to the hash chain (8.6); and
+2. an alertable event of class `gate.behaviour.drift`, emitted on the path of 8.5.
+
+An alert is not a stderr line. The audit record is the forensic source of truth (8.5) and
+needs no exporter. A stderr line is not in the chain, `audit verify` cannot check it, and
+it is lost whenever stderr is not captured.
+
+The record carries `server`, the `tool` when the drift is about one tool, the kind of
+drift (18.5), and a reference to the baseline (18.4). It carries counts and names. It
+carries no argument values, because arguments are hashed in the log (8.6).
+
+### 18.4 What a baseline is. OPEN
+
+A baseline has to be established without a learning period that blocks enforcement.
+Options, none chosen:
+
+- **A.** The first N calls in enforce mode, with enforcement on throughout. N is not set.
+- **B.** The learning mode observations (7.5), taken once and then fixed.
+- **C.** A rolling window of recent audit records, compared with the window before it.
+
+The audit record holds `args_sha256`, not arguments, so C cannot see arguments. B keeps
+argument shapes (type, a 32 character prefix and a length) in its observations file.
+
+### 18.5 What counts as drift. OPEN
+
+The candidates, none chosen for v1:
+
+| Candidate | Computed from |
+|---|---|
+| call frequency per tool | the audit log |
+| new tool combinations in a session | the audit log |
+| changes in the order of calls | the audit log |
+| shift in the argument space | argument shapes, which the audit log does not hold |
+
+### 18.6 Soundness
+
+Over-approximation is acceptable and false negatives are not, as in 2.3: the detector may
+alert on a benign change, and it must not miss a change that the chosen definition of
+drift covers. Because an alert changes no decision (18.2), a false positive costs a
+reader's attention. It costs no approval prompt.
+
+### 18.7 The approval budget. OPEN as to volume
+
+An alert is never an approval prompt and is never counted against the budget of 7.5.
+What triggers an alert, and whether alerts are rate limited, is OPEN. No values are
+proposed.
+
+### 18.8 Non-goals
+
+Anything that consults model output. A change of purpose or goal that stays inside
+permitted tool calls: it cannot be computed from those calls. Any enforcement input in
+v1. The hub's treatment of `BEHAVIOUR_DRIFT` is not specified here.
 
 ## Appendix A. Compliance mapping
 
