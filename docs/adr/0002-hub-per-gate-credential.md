@@ -29,8 +29,10 @@ status"). Running a certificate authority is real operating work for a solo main
 - Ingest requires the secret. The hub takes `gate_id` from the credential and refuses a
   request whose path names a different one.
 - The hub does not terminate TLS. The operator terminates it at a reverse proxy. The hub
-  binds to loopback by default and refuses another address unless the operator declares
-  that TLS is in front of it.
+  binds to loopback by default and refuses another address unless it is started with the
+  explicit option `--tls-terminated-by-proxy`.
+- A per-gate secret is revoked by a revoke command, immediately: ingest then returns 403,
+  stored records stay, and re-enrolling the gate issues a new secret.
 - mTLS with a hub-issued certificate is deferred to its own ADR.
 
 The hub keeps no write path toward gates and stays self-hosted (DESIGN.md 14.6 and 13.4
@@ -56,10 +58,11 @@ flag.
 - Without a TLS proxy the secret and the admin credentials cross the network in clear text.
   The refusal to bind a non-loopback address unless TLS in front is declared makes that a
   declared choice and not a default.
-- DESIGN.md 14.3 also sets token lifetimes, two roles and the removal of credentials from
-  URLs. Those do not depend on this choice and are in the same change.
-- Not settled here: how a per-gate secret is revoked or rotated, and whether admin and
-  enrollment tokens are stored hashed too. Both are listed in #179.
+- DESIGN.md 14.3 also sets token lifetimes, two roles, hashed admin and enrollment tokens,
+  a cookie session for the console, and the removal of credentials from URLs. Those do not
+  depend on this choice and are in the same change.
+- Revocation needs no list: a revoked secret stops working at once, and a gate that is
+  re-enrolled gets a new one.
 
 ## Revisit when
 
