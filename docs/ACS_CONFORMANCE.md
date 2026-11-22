@@ -6,8 +6,8 @@ Measured against the OWASP Agent Control Standard (ACS) repository
 specification v0.1.0. Gate side: bawbel-gate `develop` at `4720b07`.
 
 This is a paper assessment: the gate's code and DESIGN.md read against
-`docs/spec/conformance.md` and `specification/v0.1.0/`. Section 6 lists what was not
-run.
+`docs/spec/conformance.md` and `specification/v0.1.0/`. Section 6.1 records the one part
+that was measured by running it, and 6.2 lists what was not run.
 
 ## 1. Verdict
 
@@ -83,22 +83,97 @@ different construction, not on the ACS wire), **Yes**.
 None of this makes the gate ACS-conformant. It records which guarantees would be lost
 if the gate were placed behind ACS defaults.
 
-## 6. Not tested
+## 6. Measured, and not tested
 
-This assessment did not run anything against ACS. Specifically:
+Sections 1 to 5 are a paper assessment at the commit named at the top. This section
+records what has since been run. Rows 1 to 10 of section 3 and the quotation in section 1
+were not re-checked against a newer ACS commit, and section 7 says a newer commit
+invalidates them until they are.
 
-1. No gate build was run against the reference Guardian
-   (`reference-implementations/agt/packages/guardian`, hosts `claude-code` and
-   `opencode`).
+### 6.1 Measured on 2026-11-22: a gate-produced chain against ContextEntry
+
+Setup: bawbel-gate 0.1.1, built from `develop` at `8617299`, in a fresh virtualenv with an
+empty HOME and `env -i`. One `bawbel-gate serve` session (a call the manifest denies, an
+allowed call, and a call held for approval and answered `y`) wrote 5 records:
+`SESSION_START`, three `CALL_DECIDED`, `SESSION_END`. `bawbel-gate audit verify` printed
+`ok: 5 records, chain intact`.
+
+The schema is `specification/v0.1.0/context-entry.json`. It is byte-identical at the commit
+named at the top and at ACS commit `ee935751454eb58521b85ad5b73095e5540843c4`
+(`version.txt` 0.1.5, 2026-11-20), so the pin does not change this result. The chain
+vector in the last paragraph exists only at the second commit.
+
+| Measurement | Result |
+|---|---|
+| The 5 records validated against the schema (JSON Schema 2020-12, `jsonschema` 4.26.0) | 5 of 5 invalid, with the same 4 errors each: `entry_id`, `step_id`, `step_type` and `entry_hash` are required and absent. The schema sets no `additionalProperties`, so the gate's other fields cause no error |
+| The gate's `hash` against the `entry_hash` pattern `^[0-9a-f]{64}$` | 0 of 5 match as written, because of the `sha256:` prefix. 5 of 5 match with the prefix removed |
+| Each hash recomputed by the rule in `audit/writer.py` (`prev` inside the hashed content, the UTF-8 text of `prev` appended) | 5 of 5 equal the stored hash |
+| The same, with `prev` left out of the hashed content | 0 of 5 equal it |
+| The same, with the 32 raw bytes of the previous digest appended instead of the 71-byte text | 0 of 5 equal it |
+| First record | `prev` is `sha256:` and 64 zeros, appended as 71 bytes. The schema text appends the empty byte string |
+| Chain head | Printed once on stderr at session end, and equal to the `SESSION_END` hash. No "chain head" text on `serve`'s stdout, and no record carries it as a field |
+
+The canonical form was compared with RFC 8785 on 13 JSON texts. The oracles were Node
+20.20.2 (`JSON.stringify` for numbers and strings, keys sorted by UTF-16 code unit) and the
+`rfc8785` 0.1.4 Python package. 6 of the 13 differ from the gate's `canonical_str`:
+
+| JSON text | Gate | RFC 8785 |
+|---|---|---|
+| `{"a":1.0}` | `{"a":1.0}` | `{"a":1}` |
+| `{"a":1e20}` | `{"a":1e+20}` | `{"a":100000000000000000000}` |
+| `{"a":1e-7}` | `{"a":1e-07}` | `{"a":1e-7}` |
+| `{"a":9007199254740993}` | `{"a":9007199254740993}` | `{"a":9007199254740992}` with Node. The package refuses the integer |
+| `{"😀":1,"￮":2}` (keys U+1F600 and U+FFEE) | U+FFEE first | U+1F600 first |
+| `{"a":NaN}` | `{"a":NaN}` | not representable. Both oracles refuse it |
+
+The other 7 are the same on both sides: `{"a":1}`, `{"a":0.1}`, `{"a":1e21}`,
+`{"a":100000000000000000000}`, `{"b":1,"a":2}`, `{"a":"\u0001\u007f "}` and
+`{"a":"café"}`. The two oracles agreed on 11 of the 13. The two they did not agree on are the integers
+beyond 2^53, where the package refuses and Node rounds to a double.
+
+ADR 0001 says the differences from RFC 8785 appear only for "non-integer numbers". `1.0` is
+an integer in value, but Python parses it as a float and writes `1.0`, so it is in the
+differing set. The measured set is a number written with a fraction or an exponent where
+Python's form differs from the ECMAScript form, an integer beyond 2^53, `NaN`, and the
+order of keys when one holds a character above U+FFFF (one pair was measured).
+
+ACS ships a chain vector at `ee935751454e`:
+`reference-implementations/agt-go/internal/chain/testdata/vectors.json`, one `request_hash`
+and three chained entries. Read as data, with nothing from that repository run, it
+reproduces with the Node oracle: the `request_hash` text and digest, all 3
+`canonical_content` strings, and all 3 `entry_hash` values. So the rule as read from the
+schema is the rule the vector uses. On those 3 entries, and on all 5 of the gate's records
+from this session, the gate's `canonical_bytes` equals the RFC 8785 bytes. The gate's records
+hold only objects, integers, lists and strings, with no float. On these records the
+canonicalisation is therefore not what separates the two chains. The field names, the
+`sha256:` prefix, `prev` staying inside the hashed content, and the 71-byte text appended
+are. Where the canonical forms differ, as in the table above, an input hash such as
+`args_sha256` differs when the arguments carry such a value.
+
+ADR 0001 names the shipping of `entry_hash` test vectors as a condition for revisiting its
+decision. At the commit named at the top, `entry_hash` appears only in `context-entry.json`
+and in `docs/spec/instrument/specification.md`, and no file holds a vector. At
+`ee935751454e` the file above does. ADR 0001 is unchanged by this section.
+
+### 6.2 Not tested
+
+1. No gate build was run against a reference Guardian. At `ee935751454e` there are two:
+   TypeScript under `reference-implementations/agt` (it needs `bun`, `bun install` fetches
+   the AGT SDK and an OPA binary, and the Claude Code walkthrough needs the Claude Code
+   CLI) and Go under `reference-implementations/agt-go`, which does not exist at the
+   commit named at the top. Neither `bun` nor `go` was installed on the measuring host, and
+   nothing from the ACS repository was executed.
 2. No wire capture was compared against `specification/v0.1.0/request-envelope.json` or
-   `response-envelope.json`.
-3. No gate-produced chain was checked against `specification/v0.1.0/context-entry.json`.
-   The construction difference is established by reading both (ADR 0001), not by a
-   cross-verification run.
-4. The ACS reference implementation's `packages/conformance` harness was not run. It
-   measures what ACS can express of AGT; it does not test a Guardian.
+   `response-envelope.json`. Both files differ between the commit named at the top and
+   `ee935751454e`, so a comparison has to name the commit it uses.
+3. No gate record was mapped to a ContextEntry and run through an ACS Guardian. 6.1 shows
+   that a gate record is not a ContextEntry and why the hashes differ. It does not show what
+   a mapping would cost.
+4. The reference implementation's conformance harness was not run. At `ee935751454e`,
+   `docs/spec/conformance.md` says each reference stack's checks run at summary level and
+   "No official ACS-Core conformance suite exists yet."
 
-These are runbook step 13 (GATE-14).
+Items 1 to 4 remain runbook step 13 (GATE-14).
 
 ## 7. Re-measuring
 
@@ -112,3 +187,25 @@ jq -r '.properties.entry_hash.description' acs/specification/v0.1.0/context-entr
 
 A newer ACS commit invalidates rows 1 to 10 until re-checked. Update the commit and
 version at the top of this file in the same change.
+
+The schema and hash measurements of 6.1 can be repeated on a chain that a
+`bawbel-gate serve` session wrote to `audit.jsonl`, with `acs` checked out as above and the
+gate installed in the same environment:
+
+```python
+import hashlib, json
+from jsonschema import Draft202012Validator
+from bawbel_gate.audit.canonical import canonical_bytes
+
+schema = json.load(open("acs/specification/v0.1.0/context-entry.json"))
+for line in open("audit.jsonl"):
+    r = json.loads(line)
+    errors = [e.message for e in Draft202012Validator(schema).iter_errors(r)]
+    body = {k: v for k, v in r.items() if k != "hash"}
+    again = "sha256:" + hashlib.sha256(canonical_bytes(body) + r["prev"].encode()).hexdigest()
+    print(r["seq"], r["event"], len(errors), "errors, hash recomputed:", again == r["hash"])
+```
+
+On the chain measured in 6.1 it prints `4 errors, hash recomputed: True` for every record.
+The canonical-form comparison needs an RFC 8785 implementation: serialise the 13 JSON
+texts of 6.1 with it and with `bawbel_gate.audit.canonical.canonical_str`, and compare.
