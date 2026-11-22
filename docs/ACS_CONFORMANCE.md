@@ -101,7 +101,7 @@ allowed call, and a call held for approval and answered `y`) wrote 5 records:
 The schema is `specification/v0.1.0/context-entry.json`. It is byte-identical at the commit
 named at the top and at ACS commit `ee935751454eb58521b85ad5b73095e5540843c4`
 (`version.txt` 0.1.5, 2026-11-20), so the pin does not change this result. The chain
-vector in the last paragraph exists only at the second commit.
+vector described below exists only at the second commit.
 
 | Measurement | Result |
 |---|---|
@@ -112,6 +112,7 @@ vector in the last paragraph exists only at the second commit.
 | The same, with the 32 raw bytes of the previous digest appended instead of the 71-byte text | 0 of 5 equal it |
 | First record | `prev` is `sha256:` and 64 zeros, appended as 71 bytes. The schema text appends the empty byte string |
 | Chain head | Printed once on stderr at session end, and equal to the `SESSION_END` hash. No "chain head" text on `serve`'s stdout, and no record carries it as a field |
+| `args_sha256` of the 3 calls | All 3 equal the hash of `canonical_bytes` of the arguments as sent. Hashed over the RFC 8785 form of the same arguments instead, 2 of 3 are unchanged (`{}` and `{"title":"t"}`) and 1 differs (`{"n":1,"x":1.0,"y":0.1,"big":100000000000000000000}`) |
 
 The canonical form was compared with RFC 8785 on 13 JSON texts. The oracles were Node
 20.20.2 (`JSON.stringify` for numbers and strings, keys sorted by UTF-16 code unit) and the
@@ -123,13 +124,13 @@ The canonical form was compared with RFC 8785 on 13 JSON texts. The oracles were
 | `{"a":1e20}` | `{"a":1e+20}` | `{"a":100000000000000000000}` |
 | `{"a":1e-7}` | `{"a":1e-07}` | `{"a":1e-7}` |
 | `{"a":9007199254740993}` | `{"a":9007199254740993}` | `{"a":9007199254740992}` with Node. The package refuses the integer |
-| `{"😀":1,"￮":2}` (keys U+1F600 and U+FFEE) | U+FFEE first | U+1F600 first |
+| `{"\ud83d\ude00":1,"\uffee":2}` (keys U+1F600 and U+FFEE) | U+FFEE first | U+1F600 first |
 | `{"a":NaN}` | `{"a":NaN}` | not representable. Both oracles refuse it |
 
 The other 7 are the same on both sides: `{"a":1}`, `{"a":0.1}`, `{"a":1e21}`,
-`{"a":100000000000000000000}`, `{"b":1,"a":2}`, `{"a":"\u0001\u007f "}` and
-`{"a":"café"}`. The two oracles agreed on 11 of the 13. The two they did not agree on are the integers
-beyond 2^53, where the package refuses and Node rounds to a double.
+`{"a":100000000000000000000}`, `{"b":1,"a":2}`, `{"a":"\u0001\u007f\u2028"}` and
+`{"a":"caf\u00e9"}`. The two oracles agreed on 11 of the 13. The two they did not agree
+on are the integers beyond 2^53, where the package refuses and Node rounds to a double.
 
 ADR 0001 says the differences from RFC 8785 appear only for "non-integer numbers". `1.0` is
 an integer in value, but Python parses it as a float and writes `1.0`, so it is in the
@@ -147,8 +148,9 @@ from this session, the gate's `canonical_bytes` equals the RFC 8785 bytes. The g
 hold only objects, integers, lists and strings, with no float. On these records the
 canonicalisation is therefore not what separates the two chains. The field names, the
 `sha256:` prefix, `prev` staying inside the hashed content, and the 71-byte text appended
-are. Where the canonical forms differ, as in the table above, an input hash such as
-`args_sha256` differs when the arguments carry such a value.
+are. Where the canonical forms differ, an input hash differs too: of the 3 calls in this
+session, the one whose arguments hold `1.0` has an `args_sha256` that is not the hash of
+the RFC 8785 form of the same arguments, and the other two are.
 
 ADR 0001 names the shipping of `entry_hash` test vectors as a condition for revisiting its
 decision. At the commit named at the top, `entry_hash` appears only in `context-entry.json`
