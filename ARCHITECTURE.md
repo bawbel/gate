@@ -245,14 +245,17 @@ gate keeps those in its own map (Flow C).
 
 MCP server exposing scanner and AVE lookups to agents themselves, so an agent can
 check a dependency or server card mid-task. It is not read-only or egress-free:
-`scan_server_card` fetches a URL the caller supplies, the AVE tools call the PiranhaDB
-API at `api.piranha.bawbel.io` (the host does not resolve, so those tools report
-PiranhaDB as unavailable), the scan tools read a local path when given one, and
-`accept_finding` writes a suppression into a file.
+`scan_server_card` fetches a URL the caller supplies, the AVE tools call the AVE API at
+`api.aveproject.org` and fall back to the published AVE corpus, the scan tools read a
+local path when given one, and `accept_finding` writes a suppression into a file.
 
-- **Consumes:** the PiranhaDB API (offline); the `bawbel` CLI, run as a subprocess.
-  bawbel/bawbel-mcp#21, not merged, moves the AVE lookups to the AVE API with the
-  published AVE corpus as fallback.
+- **Consumes:** the AVE API (`api.aveproject.org`) for `lookup_ave` and `search_ave`,
+  with the published AVE corpus (`dist/ave-records-latest.json` in aveproject/ave) as
+  the fallback when the API is unavailable; the same corpus, cached for an hour by
+  default, for `list_ave` and the `ave://stats` resource; and the `bawbel` CLI, run as
+  a subprocess. A successful reply names its source. Both endpoints can be overridden with
+  `BAWBEL_AVE_API_URL` and `BAWBEL_AVE_CORPUS_URL`. This is how bawbel-mcp `develop`
+  behaves since bawbel/bawbel-mcp#21; it is not in a tagged release yet.
 - **Produces:** lookup/scan tools over MCP.
 - **Interface:** MCP. No capability manifest ships with it yet.
 
