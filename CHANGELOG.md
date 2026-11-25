@@ -19,6 +19,12 @@ itemized here; this file picks up from that baseline.
   change the exit code.
 ### Fixed
 
+- A `CALL_DECIDED` record, and the decision span, carry the taint the decision was made against
+  (#242). `taint` used to be read after the call was forwarded, which had already added the called
+  server's provenance class, so a first allowed call to a `tool.response.files` server was decided
+  against an empty set and recorded with `["tool.response.files"]`. A record written by this
+  version can therefore differ from one written before it for the same call. `audit verify` is
+  unaffected: it checks the links and not the content.
 - The gate completes the MCP handshake with each upstream server (#27). `initialize`
   carries `protocolVersion`, `capabilities` and `clientInfo`, and
   `notifications/initialized` follows the response. A server that answers `initialize`
