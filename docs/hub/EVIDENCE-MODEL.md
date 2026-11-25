@@ -3,7 +3,9 @@
 Report, 2026-11-25, for [#208](https://github.com/bawbel/gate/issues/208). It asks what an auditor, a
 CISO or an incident investigator can learn from what the gate writes and the Hub holds today, and
 what they cannot. It proposes new gate events as options, implements none, and maps nothing to a
-compliance framework. Companion reports: [THREAT-MODEL.md](./THREAT-MODEL.md) (#206).
+compliance framework. It also holds the incident questions of [#210](https://github.com/bawbel/gate/issues/210),
+which are merged into it and not kept as a separate file. Companion reports:
+[THREAT-MODEL.md](./THREAT-MODEL.md) (#206).
 
 Every claim carries a tag. **VERIFIED**: run on 2026-11-25. **SOURCED**: read from the file named, at
 `develop` `92ea9d3`. **UNVERIFIED**: stated without either, and said so.
@@ -84,6 +86,44 @@ field or an event does not exist.
 | Q9 | Can I show nothing was removed or altered? | an edit, a cut line and a missing first record are detected by `audit verify` | the Hub holds a head per session and could serve as the outside anchor. It does not compare a held record with an incoming one today | removal of the last records, a consistent rewrite and an empty file, without an anchored head. An empty or silent gate is absent from the Hub's fleet state (#207, H3) |
 | Q10 | Which components were in force, and did a tool definition change? | the manifest digest, and a `DRIFT_DETECTED` record if the gate saw a tool schema digest differ from the stored one | the manifest content by digest, as for Q2 | a component digest for the running server (DESIGN.md 4.3 is only a draft, #183), and any change the gate did not check |
 
+## Incident questions
+
+For [#210](https://github.com/bawbel/gate/issues/210). An investigator asks ten questions of the records
+after an agent does something that goes wrong. Where one is an auditor question above, the last column
+points to it and the answer is not repeated. The wording is technical evidence that helps an
+investigation. It says nothing about liability, responsibility or law.
+
+| # | Incident question | Answerable now | With a Hub-side join | Not answerable | Same as |
+|---|---|---|---|---|---|
+| I1 | Which agent initiated the action? | none | none | no agent identity member | Q1 |
+| I2 | Which human or service principal owned it? | none | none | no principal member | Q7 |
+| I3 | Who authorized the capability? | that a grant was in force: the manifest digest on the call | what was granted: the manifest content, keyed by that digest. The Hub keeps none | who wrote or approved the grant: the manifest schema has no owner or reviewer field, and no event records a change | new |
+| I4 | Which policy was active, by version or digest? | the manifest digest | the content by digest | a policy version, a rule id, a digest of `gate.yaml` | Q2, Q3 |
+| I5 | Was human approval required, requested, obtained? | for a granted call, `effect: approve` after a prompt. For a refused or timed-out one, `deny` with `approval_denied` or `approval_timeout` | none | "requested" as a separate fact: no approval event is written. By whom: no approver member. The cause of a refusal is dropped (#158) | Q4 |
+| I6 | Did the gate allow or deny the call? | `effect`, `reason` | none | none | Q3, Q5 |
+| I7 | Which downstream system executed it? | the upstream the call was forwarded to, for an allowed or approved call: `server`, a label from `gate.yaml` | none | what the downstream system did, and whether the call succeeded: no result is recorded, because `RESPONSE_RECEIVED` is defined and never written. The label is not a verified identity of the system | new |
+| I8 | Was the configuration or manifest changed recently? | none | compare `manifest_hashes` between sessions | when, by whom and to what. Any change to `gate.yaml` | Q6 |
+| I9 | Which component digest was in force? | the manifest digest | the content by digest | a component digest for the running server (draft #183) | Q10 |
+| I10 | What evidence exists, and can it be checked offline? | the log file and `bawbel-gate audit verify FILE`, which needs only the file | a bundle with its own verifier. None exists | completeness (Q9). The manifest content, which the log holds only as a digest, so the operator has to have kept it | Q9 |
+
+**Checked offline.** VERIFIED 2026-11-25: `bawbel-gate audit verify` on a copy of a log,
+with an empty `HOME` and `env -i`, printed `ok: 6 records, chain intact`.
+
+**Result.** One of the ten is answerable in full from the log (I6). Six are answerable in part (I3, I4,
+I5, I7, I9, I10) and I8 only with a join the Hub cannot do yet. Two are not answerable at all (I1, I2).
+
+### The four parties
+
+An investigation names four parties. This table says which technical records name each one today. It
+draws no conclusion about who is responsible.
+
+| Party | Records that name it today | What no record names |
+|---|---|---|
+| The vendor of a component | `server`, a label from `gate.yaml`. The manifest's `subject` name, in the manifest content. The AVE ids on a decision, when a finding applies | an organisation: there is no vendor member |
+| The deploying organisation | none. The Hub's `gate_id` is a generated label | an organisation or tenant member |
+| The permission owner | the grants in the manifest content, reached by digest | an owner, reviewer or approver: the schema has no such field and no record carries one |
+| The supervisor | none. An approval names no approver, and `SESSION_CLEAR` has `operator: cli` | any member that names a person or a role |
+
 ## What gateway checklists ask for
 
 A vendor buyer's guide for MCP gateways lists the fields and features its readers ask for. It is a
@@ -141,9 +181,13 @@ record has.
 
 ## Decisions owed
 
-Open, none decided here: whether to add gate events for a scope change and for an approver record, and
-an agent identity or owner member (P1 to P3). The remaining proposals are smaller and are listed for
-the same decision.
+Open, none decided here.
+
+- Whether to add gate events for a scope change and for an approver record, and an agent identity or
+  owner member (P1 to P3). The remaining proposals are smaller and are listed for the same decision.
+- Whether this accountability work stays inside the gate and the Hub, with no new repository.
+- Whether the Hub keeps incident objects of its own, such as an incident id and notes, that never touch
+  the records.
 
 ## Not done
 
