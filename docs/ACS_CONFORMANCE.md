@@ -115,8 +115,11 @@ vector described below exists only at the second commit.
 | `args_sha256` of the 3 calls | All 3 equal the hash of `canonical_bytes` of the arguments as sent. Hashed over the RFC 8785 form of the same arguments instead, 2 of 3 are unchanged (`{}` and `{"title":"t"}`) and 1 differs (`{"n":1,"x":1.0,"y":0.1,"big":100000000000000000000}`) |
 
 The canonical form was compared with RFC 8785 on 13 JSON texts. The oracles were Node
-20.20.2 (`JSON.stringify` for numbers and strings, keys sorted by UTF-16 code unit) and the
-`rfc8785` 0.1.4 Python package. 6 of the 13 differ from the gate's `canonical_str`:
+18.19.1 (`JSON.stringify` for numbers and strings, keys sorted by UTF-16 code unit) and the
+`rfc8785` 0.1.4 Python package. This table first named Node 20.20.2, which was a mistake:
+the runs used the Node 18.19.1 on the system `PATH`. Node 20.20.2 gives the same results,
+and differs only in the wording of its parse error for `NaN`. 6 of the 13 differ from the
+gate's `canonical_str`:
 
 | JSON text | Gate | RFC 8785 |
 |---|---|---|
@@ -211,3 +214,7 @@ for line in open("audit.jsonl"):
 On the chain measured in 6.1 it prints `4 errors, hash recomputed: True` for every record.
 The canonical-form comparison needs an RFC 8785 implementation: serialise the 13 JSON
 texts of 6.1 with it and with `bawbel_gate.audit.canonical.canonical_str`, and compare.
+
+The scripts in `scripts/acs_check/` repeat every measurement of 6.1, including the 13
+texts and the check against ACS's chain vector. They are read only and offline, and are
+run by hand, not in CI. See `scripts/acs_check/README.md`.
