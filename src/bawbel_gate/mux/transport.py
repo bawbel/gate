@@ -48,10 +48,15 @@ def deny_response(
     return {"jsonrpc": "2.0", "id": request_id, "error": error}
 
 
-def spawn_server(command: str, args: list[str]) -> subprocess.Popen:
-    """Spawn an upstream MCP server subprocess with stdio transport."""
+def spawn_server(command: str, args: list[str], env: dict[str, str]) -> subprocess.Popen:
+    """Spawn an upstream MCP server subprocess with stdio transport.
+
+    `env` is the whole environment the child gets (DESIGN.md 3.4, mux/environment.py). It is
+    required: there is no way to start an upstream that inherits the gate's environment.
+    """
     return subprocess.Popen(  # nosec B603 # noqa: S603 -- command + args come from operator-controlled gate.yaml, not user input
         [command, *args],
+        env=env,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=sys.stderr,

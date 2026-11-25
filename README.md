@@ -187,9 +187,23 @@ servers:
 - `audit_log` resolves relative to the gate process's working directory, which the MCP
   client chooses. Use an absolute path. Default: `gate.audit.jsonl`.
 - Server names must be unique. At least one server is required.
-- Upstream servers inherit the gate's environment. Put their credentials there (the `env`
-  block of the gate's client entry, step 2) and remove them from the upstream entries, so
-  a direct connection to an upstream server fails auth.
+- Upstream servers do not inherit the gate's environment. Each one starts with a short
+  baseline (`PATH`, `HOME`, `LANG`, `LC_ALL` and `TMPDIR` on POSIX; `PATH`, `PATHEXT`,
+  `SYSTEMROOT`, `COMSPEC`, `TEMP` and `TMP` on Windows) plus the variables its manifest
+  names under `environment.allow`. Put the credentials in the gate's environment (the `env`
+  block of the gate's client entry, step 2), remove them from the upstream entries, and list
+  in each manifest only the names that upstream needs:
+
+  ```yaml
+  environment:
+    allow: [GITHUB_TOKEN]
+  ```
+
+  A name that is not set in the gate's environment is not passed, and the gate names it on
+  stderr. It never prints a value. There is no wildcard and no option to inherit everything.
+  **Upgrading from a version that passed the whole environment:** add `environment.allow` to
+  each manifest. Until you do, the upstream starts without its credentials and may fail its
+  handshake, in which case the gate suspends it.
 
 ### 2. Point your MCP client at the gate
 

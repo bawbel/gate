@@ -55,6 +55,7 @@ from bawbel_gate.learn.recorder import LearnRecorder
 from bawbel_gate.mux.config import GateConfig
 from bawbel_gate.mux.namespace import from_namespaced, to_namespaced
 from bawbel_gate.mux.session import SessionState
+from bawbel_gate.mux.environment import build_upstream_env
 from bawbel_gate.mux.transport import read_messages, spawn_server, warn, write_message
 from bawbel_gate.ops.otel import emit_alert_event, record_decision_span
 from bawbel_gate.policy.approval import request_approval
@@ -137,7 +138,14 @@ def _bootstrap(cfg: GateConfig, console_state: ConsoleState | None, *, enforce: 
         manifests[server_cfg.name] = manifest
         session.manifest_hashes[server_cfg.name] = manifest.manifest_sha256
 
-        proc = spawn_server(server_cfg.command, server_cfg.args)
+        upstream_env = build_upstream_env(manifest.environment_allow)
+        if upstream_env.missing:
+            # Names only, never a value (DESIGN.md 3.4).
+            warn(
+                f"upstream {server_cfg.name}: declared environment variables not set in the "
+                f"gate's environment: {', '.join(upstream_env.missing)}"
+            )
+        proc = spawn_server(server_cfg.command, server_cfg.args, upstream_env.env)
         procs[server_cfg.name] = proc
         call_ids[server_cfg.name] = itertools.count(3)
 

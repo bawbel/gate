@@ -191,3 +191,9 @@ SSE_HEARTBEAT_INTERVAL_S = 15.0  # seconds between SSE keepalive comments
 HTTP_POLL_INTERVAL_S = 0.5   # seconds between SSE audit-log polls
 HTTP_SHUTDOWN_TIMEOUT_S = 2.0   # join timeout when stopping background thread
 HTTP_SERVER_POLL_S = 0.5   # HTTPServer.timeout (select loop granularity)
+
+# --- Upstream process environment (DESIGN.md 3.4) ---
+# The only variables, besides the names a manifest declares, that an upstream server starts
+# with. None is a credential. One place, so the list is reviewed as a list.
+UPSTREAM_ENV_BASELINE_POSIX = ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR")
+UPSTREAM_ENV_BASELINE_WINDOWS = ("PATH", "PATHEXT", "SYSTEMROOT", "COMSPEC", "TEMP", "TMP")
