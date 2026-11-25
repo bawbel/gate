@@ -55,6 +55,17 @@
       "type": "array",
       "items": {"$ref": "#/$defs/integrityWatch"}
     },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}
+        }
+      }
+    },
     "approval": {
       "type": "object",
       "additionalProperties": false,

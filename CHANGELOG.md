@@ -26,6 +26,16 @@ itemized here; this file picks up from that baseline.
   server built on the official MCP Python SDK now lists its tools through the gate
   (tested with mcp 1.30.0 and 2.3.0).
 
+### Changed
+
+- **Behaviour change:** an upstream server no longer inherits the gate's environment (#231).
+  It starts with a short baseline plus the names its manifest lists under the new
+  `environment.allow`, and a listed name that is not set in the gate's environment is named
+  on stderr (never its value). There is no wildcard and no inherit-all option. Migration: add
+  `environment.allow` to each manifest with the variables that upstream needs, for example
+  `[GITHUB_TOKEN]`. Until then the upstream starts without them and may fail its handshake,
+  which suspends it. `spawn_server` now requires an `env` argument.
+
 ## [0.1.1] - 2026-10-12
 
 README and metadata fixes for the PyPI project page. No code changes.
