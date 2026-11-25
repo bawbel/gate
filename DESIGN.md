@@ -763,6 +763,63 @@ JCS, drop both hash fields, and concatenate the raw previous digest.
 `docs/adr/0001-audit-chain-construction.md` records the decision;
 `tests/test_audit_construction.py` pins the construction with golden values.
 
+**Order of the record and the forward. Draft, specified, not implemented.** Tracked in
+[#229](https://github.com/bawbel/gate/issues/229). Points marked **OPEN** list their
+options and choose none. This paragraph changes nothing in the record format, the hash
+chain or any other section.
+
+For a call the gate will forward, that is an `allow`, or an `approve` that was approved,
+the gate writes an **intent record** before it sends the call to the upstream. The record
+carries the members of a `CALL_DECIDED` record above, and its `taint` is the session's
+taint at the moment of the decision. Three requirements:
+
+1. **No record, no forward.** If the intent record cannot be written, the call is not
+   forwarded. It is denied with a reason code of its own, and the denial is reported to
+   the host like any other. OPEN: the reason code name, and whether the denial is itself
+   recorded when the same write has just failed.
+2. **What an intent record says.** That the gate decided to forward the call and was about
+   to. It does not say that the upstream received the call, ran it or succeeded. An intent
+   record with nothing after it means the outcome is unknown.
+3. **A denied call** is recorded once, as now, and is not forwarded. An approval that is
+   refused or times out is a denial.
+
+Options for the rest, none chosen:
+
+- **A. Reorder only.** The existing `CALL_DECIDED` record is the intent record, written
+  before the forward. No new event and no new member. The Hub's counters and the posture
+  tally keep working, because both read `CALL_DECIDED` (`hub/store.py`, `ops/posture.py`).
+  The meaning of an `allow` record changes from "forwarded" to "decided to forward", and
+  its `taint` changes: it was read after the call's own provenance class had been added to
+  the session, and it would be read before.
+- **B. A, plus a record when the upstream answers.** A second record per forwarded call,
+  naming the intent record's `seq`, with an outcome class only (a result, a JSON-RPC
+  error, or no usable answer) and no payload. `RESPONSE_RECEIVED` is defined in `_const.py`
+  and not written anywhere. This doubles the records for a forwarded call and adds a
+  member, so it is a format change.
+- **C. Neither.** The order stays as it is, and the limit is documented.
+
+Also OPEN:
+
+- Whether learn mode follows. It records everything and enforces nothing, so "no record, no
+  forward" would turn a recording failure into a denial there.
+- Durability. The writer opens the file, appends one line and closes it, with no `fsync`.
+  A record that was appended survives the gate being stopped with `SIGKILL`, and may not
+  survive a power loss. Flushing to disk after each write is a separate option and is not
+  part of this draft.
+- The approval prompt itself is not recorded (`APPROVAL_GRANTED`, `APPROVAL_DENIED` and
+  `APPROVAL_TIMEOUT` are defined and not written), so the time spent waiting for a person
+  is inside the interval between the request and the intent record.
+
+What the implementation PR tests first, as property tests committed before the code
+(CONTRIBUTING.md, "Property test before implementation"). None is written here:
+
+- for every forwarded call, a record with that call's `args_sha256` is on disk before the
+  upstream receives the call. The test uses an upstream that reads the audit file when the
+  call arrives;
+- if the writer raises, the upstream receives nothing and the host gets a denial;
+- a denied call writes one record and is not forwarded;
+- under option A, the Hub's counters are unchanged for a replayed log.
+
 Chain head is printed at `SESSION_END` and can be anchored externally (git note,
 Vault KV, or a transparency log later). `bawbel-gate audit verify <file>` replays the
 chain. Argument payloads are hashed, not stored, by default; `--store-args` exists
