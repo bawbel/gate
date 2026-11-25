@@ -185,6 +185,12 @@ CONSOLE_DEFAULT_HOST = "127.0.0.1"
 CONSOLE_DEFAULT_PORT = 7317
 HUB_DEFAULT_HOST = "127.0.0.1"
 HUB_DEFAULT_PORT = 8443
+# Ingest limits (HUB-R12a). A batch is flushed at 200 records or 2 s (DESIGN.md 13.2) and a
+# record is a few hundred bytes, so 1 MiB is several times a full batch.
+HUB_MAX_BODY_BYTES = 1_048_576
+HUB_REQUEST_TIMEOUT_S = 10.0   # whole-body deadline, and the socket timeout while reading headers
+HUB_LINGER_S = 1.0             # after an early refusal, how long to drain what the client still sends
+HUB_LINGER_MAX_BYTES = 1_048_576
 
 # --- Internal server tuning ---
 SSE_HEARTBEAT_INTERVAL_S = 15.0  # seconds between SSE keepalive comments
