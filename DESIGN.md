@@ -771,9 +771,12 @@ for regulated deployments with their own encryption at rest.
 ### 8.7 Audit export
 
 **Draft, specified, not implemented.** Tracked in
-[#201](https://github.com/bawbel/gate/issues/201). Points marked **OPEN** list their
-options and choose none. This section changes nothing in the audit log (8.6), the hash
-chain or any other section.
+[#201](https://github.com/bawbel/gate/issues/201). Points that carry a **Decision** line
+record the maintainer's written answer of 2026-11-25, copied here by the executor, who chose
+nothing. The options above each Decision line stay as the record of what was weighed. A point
+still marked **OPEN** lists its options and chooses none. This section changes nothing in the
+audit log (8.6), the hash chain or any other section, and it stays a draft until the
+maintainer has read it.
 
 #### 8.7.1 What it is, and what it is not
 
@@ -804,7 +807,7 @@ and the commit above, it gained 122 lines and lost 13. Three steps were added
 (`steps/skillRegister`, `steps/skillLoad`, `steps/skillUnload`). `agbom/snapshot` and
 `agbom/changed` stayed class 5001 but changed from "Inventory Info" with no activity to
 "Device Inventory Info" with activity 2. The decision rules grew from three members to
-thirteen. How the gate pins the file is OPEN (8.7.8).
+thirteen. How the gate pins the file is decided in 8.7.8.
 
 The entries at that commit that bear on the gate's events:
 
@@ -845,11 +848,11 @@ The `append` call sites in `src/` write five event types. The other event names 
 
 A record has `session` and `seq`. It has no request id. ACS's join fields are `request_id` and
 `session_id`, and its `metadata.correlation_uid` is `<session_id>:<request_id>`. What the gate
-puts there is OPEN (8.7.4).
+puts there is decided in 8.7.4.
 
-#### 8.7.4 What a CALL_DECIDED becomes. OPEN
+#### 8.7.4 What a CALL_DECIDED becomes
 
-Options, none chosen:
+Options:
 
 - **A.** One decision event per record, as the ACS decision rules say: deny and approve (ASK)
   as Detection Findings (2004), allow as Application Lifecycle (6002) with severity 1, or as a
@@ -860,12 +863,17 @@ Options, none chosen:
   `metadata.correlation_uid`.
 
 For `metadata.correlation_uid` and the join fields, the gate has `session` and `seq` and no
-request id. Options, none chosen: write `<session>:<seq>`, a value the gate defines in ACS's
-format, or leave the join fields out.
+request id. Options: write `<session>:<seq>`, a value the gate defines in ACS's format, or
+leave the join fields out.
 
-#### 8.7.5 Events with no ACS entry. OPEN
+**Decision: A, maintainer, 2026-11-25.** One decision event per record, as the ACS decision
+rules say. Write `<session>:<seq>` as the join value, and label its basis under `unmapped.gate`
+as session and seq, so it is never read as an ACS request id. The name of that member is left
+to the implementation PR.
 
-`DRIFT_DETECTED` and `SESSION_CLEAR`. Options, none chosen:
+#### 8.7.5 Events with no ACS entry
+
+`DRIFT_DETECTED` and `SESSION_CLEAR`. Options:
 
 - **A.** Omit both, and say so in the first line of the export.
 - **B.** Emit both under a class the ACS file already names (for example 6002), with the gate's
@@ -877,17 +885,33 @@ format, or leave the join fields out.
 
 In every option no class UID comes from anywhere but the ACS file.
 
-#### 8.7.6 What a deny says. OPEN
+**Decision, maintainer, 2026-11-25:** option C for `DRIFT_DETECTED` only if
+`docs/ACS_GATE_MAPPING.md` section 3 relates it to the entry, otherwise option A.
+`SESSION_CLEAR` is omitted. The first line of the export names what is omitted.
+
+Executor check of the condition, read 2026-11-25 in this branch: section 3 of
+`docs/ACS_GATE_MAPPING.md` has a row that reads "`agbom/changed` on mid-session mutation
+(`acs-inspect-dynamic`)" against "tool schema drift suspends a server at `VERIFY` (DESIGN.md
+6.2, 8.1)", with the gap "Checked at session start only, not mid-session". The file therefore
+relates tool schema drift to `agbom/changed`, so option C applies. The gap column is a
+difference the maintainer may want to weigh: the ACS entry is for a change in the middle of a
+session and that file says the gate checks at the start only. The executor applied the
+condition as written and did not weigh it.
+
+#### 8.7.6 What a deny says
 
 The ACS decision rules say that "an action_id of 2 (Denied) or a disposition_id of 2 (Blocked)
 never proves the action was blocked", because only the Observed Agent sees the enforced outcome.
 The gate is the enforcement point: a denied call is not forwarded to the upstream. Options,
-none chosen:
+options:
 
 - **A.** Use the ACS defaults as they stand: action_id 2 and disposition_id 2 for a deny.
 - **B.** The same ids, with a member under `unmapped.gate` that says the call was not forwarded.
 
 Whichever is chosen, the export does not say that it proves anything about the upstream.
+
+**Decision: B, maintainer, 2026-11-25.** The ACS ids, plus a member under `unmapped.gate`
+saying the gate did not forward the call. It says nothing about the upstream.
 
 #### 8.7.7 What an export carries and never carries
 
@@ -895,14 +919,17 @@ It never carries an argument payload or a tool result (the log holds `args_sha25
 credential, or a value read from outside the log. It carries the members of a record that the
 chosen mapping places.
 
-Whether an exported event can be traced to its record is OPEN. Carry `session`, `seq`, `hash`
-and `prev` under `unmapped.gate`: **A.** always, **B.** only with a flag, **C.** never. With C
-an event cannot be matched to a chain position, and a round-trip test cannot be written.
+Whether an exported event can be traced to its record: carry `session`, `seq`, `hash` and
+`prev` under `unmapped.gate`: **A.** always, **B.** only with a flag, **C.** never. With C an
+event cannot be matched to a chain position, and a round-trip test cannot be written.
 
-#### 8.7.8 Pinning the mapping. OPEN
+**Decision: A, maintainer, 2026-11-25.** Always carry `session`, `seq`, `hash` and `prev`
+under `unmapped.gate`.
+
+#### 8.7.8 Pinning the mapping
 
 ACS states that `specification/**` is under Apache-2.0 (`LICENSING.md` at the commit above),
-the licence this repository carries. Options, none chosen:
+the licence this repository carries. Options:
 
 - **A.** A copy of the file in this repository, with the ACS commit and git blob id recorded,
   and a test that every class UID in an export is in it.
@@ -914,22 +941,44 @@ the licence this repository carries. Options, none chosen:
 Also open: whether to pin the commit named in 8.7.2 or a newer one, and who updates the pin and
 when. Whether to copy the file at all is the maintainer's decision.
 
-#### 8.7.9 Formats. OPEN
+**Decision: A, maintainer, 2026-11-25.** A copy of the file in this repository, with the ACS
+commit and git blob id recorded, with the licence notice that Apache-2.0 requires kept beside
+it, and a test that every class UID in an export is in it. Pin the commit named in 8.7.2. The
+pin is updated only by an explicit PR, never automatically.
+
+For the implementation PR, read 2026-11-25 with `git ls-tree` at that commit: the git blob id of
+`specification/v0.1.0/trace/ocsf-mapping.json` is `583a85ae591e032d60db620713df41bf20b8d581`,
+and the ACS repository root holds `LICENSE`, `LICENSING.md` and a `NOTICE` file. Which of them
+the notice beside the copy must include is for that PR and the maintainer to settle. The
+executor did not decide it.
+
+#### 8.7.9 Formats
 
 **A.** OCSF only. **B.** OCSF and CEF of audit records. **C.** CEF of audit records only. The
 CEF code that exists today formats alerts only. In every option the OCSF version is the one the
 ACS file names, 1.9.0 at the commit above.
 
-#### 8.7.10 The command. Shape, with the detail OPEN
+**Decision: A, maintainer, 2026-11-25.** OCSF only.
+
+#### 8.7.10 The command
 
 ```
 bawbel-gate audit export FILE --format ocsf [--output PATH]
 ```
 
 It writes one JSON object per line, to PATH or to standard output. Whether `--format cef`
-exists is 8.7.9. A usage error exits 2. Whether the log is verified first is OPEN, options
-none chosen: **A.** verify first and refuse a log whose chain fails, with exit 1. **B.** Export,
-and say in the first line that verification was not run. **C.** An option decides.
+exists is 8.7.9. A usage error exits 2. Whether the log is verified first, options: **A.**
+verify first and refuse a log whose chain fails, with exit 1. **B.** Export, and say in the
+first line that verification was not run. **C.** An option decides.
+
+**Decision: C, with verify-first (A) as the default, maintainer, 2026-11-25.** The command
+verifies the log first and refuses a log whose chain fails, with exit 1. A `--skip-verify`
+option exports anyway and writes the first line "verification not run".
+
+Two decisions name "the first line": 8.7.5 (what is omitted) and this one. The executor reads
+them as one header line that carries both, and the maintainer is asked to confirm that. The
+executor also asks whether "what is omitted" in 8.7.5 includes the 1007 step events that 8.7.4
+option A does not export.
 
 #### 8.7.11 What the implementation PR tests first
 
