@@ -1193,6 +1193,191 @@ day: trivial for SQLite, comfortable for years in Postgres. Chain verification i
 sequential per session and cheap. The hub is stateless above its database; backup is
 `pg_dump` or copying one file. Ships as a single OCI image plus a compose file.
 
+## 15. Decision API for non-MCP enforcement points
+
+**Draft, specified, not implemented.** Tracked in
+[#184](https://github.com/bawbel/gate/issues/184). Four questions are marked **OPEN**
+below. Each lists its options and chooses none. They are the maintainer's to answer
+before this section merges.
+
+### 15.1 Problem and callers
+
+The policy engine (Section 5) is reachable only through the MCP multiplexer (Section
+3). An enforcement point that is not an MCP tool call cannot ask the gate for a
+decision, and a caller that needs one has to reimplement the policy engine, which is a
+second enforcement path.
+
+A concrete caller is bawbel/factory, whose decision points are `patch_accept`,
+`git_push`, `pr_open` and `net_egress`. A later caller is an integration with an
+external supervisor, which needs the same shape (`docs/ACS_GATE_MAPPING.md`).
+
+`bawbel-gate decide` reads one DecisionRequest as JSON on stdin, writes one Decision as
+JSON on stdout, and appends one audit record. It runs the pipeline of 5.2. It adds no
+policy semantics. The effect lattice (5.1) is unchanged, and no field of a request can
+raise an effect.
+
+### 15.2 DecisionRequest and Decision
+
+```json
+{"request": {"subject": "factory-doc-sync", "session": "j-2026-10-05-0007",
+ "action": "patch_accept", "resource": "repo:bawbel/scanner",
+ "args": {"paths": ["README.md"]}, "manifest_sha256": "sha256:77e0..."}}
+```
+
+```json
+{"decision": {"effect": "approve", "reason": "resolved", "rule_ids": ["patch_accept"],
+ "ave": [], "session": "j-2026-10-05-0007", "seq": 41,
+ "hash": "sha256:90fa...", "prev": "sha256:e3d1..."}}
+```
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bawbel Gate DecisionRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request"],
+  "properties": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "action"],
+      "properties": {
+        "subject": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"},
+        "session": {"type": "string", "minLength": 1},
+        "action": {"type": "string", "minLength": 1},
+        "resource": {"type": "string"},
+        "args": {"type": "object"},
+        "manifest_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bawbel Gate Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision"],
+  "properties": {
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effect", "reason", "seq", "hash", "prev"],
+      "properties": {
+        "effect": {"enum": ["allow", "approve", "deny"]},
+        "reason": {"type": "string"},
+        "rule_ids": {"type": "array", "items": {"type": "string"}},
+        "ave": {"type": "array", "items": {"type": "string"}},
+        "session": {"type": "string"},
+        "seq": {"type": "integer", "minimum": 1},
+        "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "prev": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    }
+  }
+}
+```
+
+- `subject` names the manifest the decision is made against. It is not the id of the
+  caller process.
+- `action` is a bare action name such as `patch_accept`. How it is matched is OPEN
+  (15.3). `session` is optional in the schema, and what it means is OPEN (15.4).
+- `manifest_sha256` is optional. When present it is the hash the caller expects the
+  subject's manifest to have, and a different value is a failure (15.8).
+- `rule_ids` is a list, as in the engine's `Decision`.
+- `effect` is `allow`, `approve` or `deny`. What `approve` asks of the caller is not
+  specified here: the existing approval channels are local to a gate (13.4), and this
+  section does not add one.
+
+### 15.3 Grant resolution for bare action names. OPEN
+
+A `decide` call has no `{server}__{tool}` name (3.2). Options, none chosen:
+
+- **A.** A bare `action` matches `grants.tools[].name` in the subject's manifest, with
+  the exact-beats-wildcard rule of 5.2 steps 1 and 2.
+- **B.** The gate forms a prefixed name from a reserved synthetic segment, so an action
+  can never collide with an MCP tool name in the same manifest.
+- **C.** The manifest gets a separate list of actions. This changes the 4.2 schema.
+
+Whichever is chosen, 5.2 steps 3 to 6 apply unchanged: a failed condition is a `deny`, a
+guard hit is a `deny`, taint rules and the trifecta invariant only lower the effect.
+
+### 15.4 Synthetic sessions. OPEN
+
+The session of Section 6 is minted by an MCP `initialize`. A `decide` caller has none.
+Options, none chosen:
+
+- **A.** The caller supplies a session id, and the gate keeps state under it.
+- **B.** The gate mints an id on the first request that has none and returns it, and the
+  caller sends it back.
+- **C.** No sessions: each request stands alone, so taint and the trifecta cannot span
+  two calls.
+
+Options A and B need session state kept between separate `decide` processes, a rule for
+when a session ends, and an operator action that plays the part of `SESSION_CLEAR`
+(6.2). Option C needs none of them.
+
+### 15.5 Taint for a subject that is not an MCP server. OPEN
+
+Whether `decide` updates taint, and from what. Options, none chosen:
+
+- **A.** It never updates taint.
+- **B.** The request names the provenance of its inputs and the gate applies it. That
+  provenance is asserted by the caller, and 2.3 says false negatives are not acceptable.
+- **C.** The gate derives taint from a mapping in the manifest.
+
+### 15.6 The trifecta invariant applies unchanged
+
+Step 6 of 5.2 runs on every `decide` request. It is not configurable, and no field of a
+request or of a manifest can skip it. The reason: the invariant is enforced in
+resolution step 6, outside manifest control (7.2), and it has no exception for the kind
+of caller. A second front door that skipped it would be a way around it. What session
+state the invariant reads for a `decide` caller depends on 15.4 and 15.5.
+
+### 15.7 Audit. OPEN as to the chain
+
+Each `decide` call appends exactly one audit record. The record is built and chained as
+in 8.6, with the same `canonical_json` and the same `prev` rule. It is a `CALL_DECIDED`
+record, with the request's `subject` in `server` and its `action` in `tool`. No new
+event class is added here, because a new class is an amendment to 6.2 and 8.5 that merges
+alone. The `args` object is hashed, not stored, as in 8.6.
+
+Which chain the record joins is OPEN. Options, none chosen:
+
+- **A.** One chain per synthetic session, in the same audit file as MCP sessions.
+- **B.** A separate chain file for `decide`.
+- **C.** One chain across everything in the gate's audit file.
+
+Whether a chain is per file or per session is also the question in
+[#159](https://github.com/bawbel/gate/issues/159), and the two answers have to agree.
+
+### 15.8 Failure modes
+
+Every failure resolves to `deny`, either as a Decision or, when no Decision can be
+produced, by the caller's rule below. There is no fail-open path.
+
+| Failure | Result |
+|---|---|
+| stdin is not valid JSON | `deny`, reason `parse_error` |
+| the request does not match the DecisionRequest schema | `deny`, reason `parse_error` |
+| no manifest exists for `subject` | `deny` |
+| the manifest for `subject` fails validation (4.2) | `deny` |
+| `manifest_sha256` is present and differs from the hash of the manifest the gate loaded | `deny` |
+| the gate cannot produce a decision | no Decision on stdout, a non-zero exit |
+
+A caller treats a non-zero exit, an empty stdout, or no answer within its own timeout as
+`deny`. Where the gate can still append a record, it appends one for a failure too.
+
+### 15.9 Non-goals
+
+`decide` never executes anything, never calls upstream, and never mutates a manifest. It
+does not consult model output (2.3). It does not add an approval channel, a command
+channel, or any inbound connection (13.4, 14.6).
+
 ## Appendix A. Compliance mapping
 
 Mapping of gate controls to frameworks in scope for regulated deployments. Wording is
