@@ -1095,6 +1095,34 @@ shaped like an audit record: not an object, a `session` that is not a non-empty 
 that is not an integer from 1 to 2^63-1, or a `hash` or `prev` that is missing or empty. Nothing
 from the record is echoed in the answer.
 
+**The restart rule, in full.** A record is a restart only if every one of these holds, and
+otherwise the batch is refused:
+
+1. The Hub does not hold the record's session. A record of a held session is a replay or a
+   `next` record, never a restart.
+2. The record's event is `SESSION_START`.
+3. Its `prev` is the `hash` of a record the Hub holds for the same `gate_id`, in any session of
+   that gate, or of a record accepted earlier in the same batch. A record of another gate never
+   counts. A `prev` that names no such record is refused with `prev`.
+4. That record is not followed: no held record of the gate, and no record accepted earlier in
+   the batch, has it as `prev`. A second restart from the same record is refused with `fork`.
+5. Its `seq` is that record's `seq` plus one. Any other `seq` is refused with `seq_gap`.
+6. Its `hash` recomputes with that `prev`.
+
+When a batch holds several sessions, they are checked in the order of their first record's
+`seq`, so a restart is explained by the records before it in the same batch whatever order the
+batch lists the sessions in. A first record with the genesis `prev` and a `seq` of 1 is a
+`first` record, not a restart: that is how a rotated log starts a new chain. Any other first
+record is refused, with `seq_gap` if its `prev` is the genesis value and `prev` otherwise.
+
+`acked` is the highest `seq`, per session, in the batch that was verified. A record that was
+stored now and a record the Hub already held identically both count. It is never the Hub's
+head: a gate that resends records 1 to 3 of a session the Hub holds to 6 is acked to 3, so its
+cursor cannot move past records it did not send.
+
+**Migration.** None is provided for rows that earlier ingest code stored without verifying them
+(a record with a `hash` and no `prev`). No such database is known, and nothing repairs one.
+
 **Request limits.** The Hub reads a body only up to a configured size (default 1 MiB, about ten
 times a full batch of 200 decision records) and answers a larger `Content-Length` with `413`
 before reading any of it. A body has a total deadline (default 10 s). The server runs one thread
@@ -1103,9 +1131,9 @@ may take to send its headers, the number of threads, and the rate per credential
 
 **OPEN.** (1) Whether a refused batch is kept in a quarantine table, which 13.2 above still says
 and which nothing implements. (2) What a gate does after a `422`: skipping the bad record would
-leave a gap, so the draft says stop shipping that session. (3) Whether a restart may name any
-unfollowed record of the gate, as implemented, or only the head of the gate's latest session.
-(4) Whether the default limits are right.
+leave a gap, so the draft says stop shipping that session. (3) Answered: the maintainer accepted the
+restart rule as implemented on 2026-11-26, so a restart may name any unfollowed record of the
+gate. (4) Whether the default limits are right.
 
 **Retention interaction.** Local JSONL rotation is permitted only past the acked
 cursor in fleet mode; in local-only mode, rotation policy is operator-defined and
