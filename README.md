@@ -400,7 +400,9 @@ bawbel-gate posture --audit-log /home/you/.bawbel/gate.audit.jsonl
 ```
 
 `audit verify` exits 0 with `ok: N records, chain intact`, or exits 1 with the first broken
-link on stderr. `posture` and `clear` default to `bawbel-audit.jsonl`, not to the gate's
+link on stderr. It also checks that `seq` is 1 for the first record and rises by 1 for each
+record after it, so a gap or a repeat fails with `seq N: expected seq M`. A file written by
+several `serve` runs passes, because each run resumes the `seq` from the file. `posture` and `clear` default to `bawbel-audit.jsonl`, not to the gate's
 `audit_log`; pass `--audit-log`.
 
 #### Verifying a log you did not write
@@ -483,7 +485,7 @@ Every command takes `--help`. `bawbel-gate --version` prints the installed versi
 | `lint MANIFEST_DIR` | Validates every `*.yaml` under `MANIFEST_DIR` against the capability manifest schema | `--forbid-effect EFFECT`; `--tools-with FLAG`; `--schema` (accepted, no effect) | `--forbid-effect` fails on any `EFFECT` grant; `--tools-with` limits that to manifests whose `trifecta.FLAG` is true. Exit 1 on any failure. Also prints a `W-UNENFORCED` warning for each `subject.binary_integrity` and each `integrity_watch` entry of kind `binary` or `remote_resource`: the schema accepts them and the gate does not enforce them (#42). A warning does not change the exit code |
 | `verify TOOLS_JSON MANIFEST` | Compares a `tools/list` result against the manifest's `tool_schema_integrity` pin | `--accept` | No pin: prints the hash, exit 0. Drift: exit 1 unless `--accept`. `--accept` rewrites the manifest without comments |
 | `harden` | Merges an AVE record's `capability_mitigation` stanza into a manifest | `--ave AVE_ID` (required); `--manifest FILE`; `--write`; `--allow-unreviewed`; `--mitigations PATH` (default `mitigations/ave-mitigations.json`) | Prints the diff. Writes only with `--write`. Refuses unreviewed stanzas by default |
-| `audit verify FILE` | Replays the hash chain | none | Exit 0: `ok: N records, chain intact`. Exit 1: first broken link on stderr |
+| `audit verify FILE` | Replays the hash chain | none | Exit 0: `ok: N records, chain intact`. Exit 1: first broken link, or first record whose `seq` is not the previous plus one, on stderr |
 | `audit tail FILE` | Prints the last audit records as JSONL | `-n`, `--lines N` (default 20); `-f`, `--follow` | |
 | `posture` | Prints an agent risk posture report from an audit log | `--audit-log PATH` (default `bawbel-audit.jsonl`, env `BAWBEL_AUDIT_LOG`); `--json` | |
 | `clear` | Appends a `SESSION_CLEAR` audit record for a session | `--session ID` (required); `--confirm` (required); `--audit-log PATH` (default `bawbel-audit.jsonl`) | Does not reach a running gate |

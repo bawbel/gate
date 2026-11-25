@@ -25,6 +25,13 @@ itemized here; this file picks up from that baseline.
   with an error is suspended: its tools are not listed and calls to it are denied. A
   server built on the official MCP Python SDK now lists its tools through the gate
   (tested with mcp 1.30.0 and 2.3.0).
+- `bawbel-gate audit verify` also checks `seq` (#236). The first record must be 1 and each record
+  after it the previous plus one, and the first record that is not fails with
+  `seq N: expected seq M` and exit 1. A chain with correct links and a skipped, repeated or
+  high-starting `seq` used to verify. A file written by several `serve` runs still passes, because
+  each run resumes the `seq` from the file. A log that fails now is one that was already
+  inconsistent. Someone who can recompute every hash can still renumber, so this narrows the limit
+  and does not close it.
 
 ## [0.1.1] - 2026-10-12
 

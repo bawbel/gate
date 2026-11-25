@@ -113,11 +113,14 @@ class VerifyResult:
 
 
 def verify_chain(path: Path) -> VerifyResult:
-    """Replay a JSONL audit file and verify hash linkage.
+    """Replay a JSONL audit file and verify hash linkage and seq.
 
     Returns VerifyResult with ok=True if the chain is intact, or ok=False
-    with details about the first broken link. Truncated final records are
-    detected as a JSON parse error on the last line.
+    with details about the first broken link or the first record whose seq
+    is not the previous one plus one (the first record's seq is 1). A
+    restart is not an exception: `serve` resumes the chain and the seq from
+    the file (see DESIGN.md 8.6). Truncated final records are detected as a
+    JSON parse error on the last line.
     """
     prev = AUDIT_CHAIN_GENESIS
     count = 0
@@ -151,6 +154,14 @@ def verify_chain(path: Path) -> VerifyResult:
                 ok=False, records=count,
                 error=f"seq {record.get('seq')}: hash mismatch",
                 error_seq=record.get("seq"),
+            )
+        seq = record.get("seq")
+        if type(seq) is not int or seq != count + 1:
+            shown = seq if type(seq) is int else None
+            return VerifyResult(
+                ok=False, records=count,
+                error=f"seq {seq!r}: expected seq {count + 1}",
+                error_seq=shown,
             )
         prev = stored_hash
         count += 1
