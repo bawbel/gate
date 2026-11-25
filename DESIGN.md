@@ -206,6 +206,54 @@ attacker-controllable content (T1, 2.1) and are not proxied in v1. A release tha
 proxies any content-bearing method passes its response through the provenance tagger
 before returning it.
 
+### 3.4 Upstream process environment
+
+**Draft, specified, not implemented.** Tracked in
+[#231](https://github.com/bawbel/gate/issues/231). Points marked **OPEN** list their
+options and choose none. This subsection is a behaviour change: until it is implemented an
+upstream server starts with the gate's whole environment.
+
+The environment an upstream process starts with is built, not inherited. It is the baseline
+below plus each name in the manifest's `environment.allow` (4.2) that is set in the gate's own
+environment. Nothing else is passed. Credentials still live in the gate's environment (10,
+item 3), and each upstream receives only the ones its manifest names.
+
+1. **Baseline.** A short fixed list of variables that most programs need to start, kept in
+   one place in the code. OPEN: its contents. The draft proposes `PATH`, `HOME`, `LANG`,
+   `LC_ALL` and `TMPDIR` on POSIX, and `PATH`, `PATHEXT`, `SYSTEMROOT`, `COMSPEC`, `TEMP` and
+   `TMP` on Windows.
+2. **Declared names.** `environment.allow` is a list of variable names. A name matches
+   exactly on POSIX and without regard to case on Windows. The gate passes the value it has
+   and never invents one.
+3. **A declared name that is not set** in the gate's environment is not passed. The gate
+   writes one line to stderr that names it, and never a value.
+4. **No wildcard and no inherit-all.** A manifest cannot ask for the whole environment, and
+   no gate option does. OPEN: whether a temporary migration aid is wanted. The draft says
+   no, because a switch that restores the old behaviour is the old behaviour.
+5. **Literal values.** The manifest names variables and does not set them. OPEN: whether it
+   may set a non-secret literal such as a log level. The draft says no.
+6. **Visibility.** Names are in the manifest and so are covered by `manifest_sha256` (4), and
+   a change shows in the audit chain. A value is never written to the audit log, stderr,
+   the console or the Hub.
+7. **Learning mode** builds the environment the same way.
+8. **Migration.** A deployment that relied on inheritance lists, in each manifest, the
+   variables that upstream needs. Until it does, the upstream starts without them. A server
+   that then fails its handshake is suspended (3.3). The README and the CHANGELOG say so.
+
+This does not limit an upstream's network or file access, and it does not change what the
+gate does with arguments or results.
+
+What the implementation PR tests first, as property tests committed before the code
+(CONTRIBUTING.md, "Property test before implementation"). None is written here:
+
+- a variable that is neither in the baseline nor declared never reaches the child, for any
+  set of variables in the gate's environment;
+- a declared variable that is set reaches the child with the gate's value, and only that
+  child;
+- a declared variable that is not set is absent from the child and named on stderr, and no
+  value appears on stderr;
+- the manifest schema rejects an empty name, a name with `=`, a wildcard, and a duplicate.
+
 ## 4. Capability manifest
 
 One manifest per component. Authored in YAML, validated against the JSON Schema in 4.2.
@@ -333,6 +381,17 @@ integrity_watch:
     "integrity_watch": {
       "type": "array",
       "items": {"$ref": "#/$defs/integrityWatch"}
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"}
+        }
+      }
     },
     "approval": {
       "type": "object",
