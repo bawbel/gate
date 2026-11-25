@@ -1044,10 +1044,11 @@ Push-only, gate to platform. **No inbound connections to gates, ever.** This is 
 hard property, not a default: gates in bank networks must not require listening
 sockets reachable from outside the host.
 
-**Transport.** `POST /v1/gates/{gate_id}/records`, mTLS with a per-gate client
-certificate, `Content-Type: application/x-ndjson`, body is a batch of audit records
-in ascending `seq` per `(gate_id, session_id)`. Batching: flush at 200 records or
-2 s, whichever first.
+**Transport.** `POST /v1/gates/{gate_id}/records`, authenticated with the per-gate
+secret (14.3) as `Authorization: Bearer`, over TLS that the operator terminates in
+front of the hub, `Content-Type: application/x-ndjson`, body is a batch of audit
+records in ascending `seq` per `(gate_id, session_id)`. Batching: flush at 200 records
+or 2 s, whichever first.
 
 **Cursor and durability.** Records are durable in the local JSONL before any send
 (the JSONL is the outbound buffer; there is no second queue). The gate keeps
@@ -1094,24 +1095,24 @@ approval routing is a platform-era question and is explicitly deferred.
 
 ## 14. bawbel-hub: the team tier
 
-The hub is the fleet view for a team of gates: 5 to 50 developers, one console. It is
-the first paid tier, and it is deliberately small: the ingest protocol (13.2), the
-console views (13.1), and the audit chain already define almost all of it. The hub is
-assembly plus identity, not new invention.
+The hub is the optional fleet view for a team of gates: 5 to 50 developers, one
+console. It is deliberately small: the ingest protocol (13.2), the console views
+(13.1), and the audit chain already define almost all of it. The hub is assembly plus
+identity, not new invention.
 
 ### 14.1 Positioning
 
-- **Buyer:** a team lead or security engineer who already runs gates per workstation
+- **Who it is for:** a team lead or security engineer who already runs gates per workstation
   and wants one place to see sessions, denies, drift, and trifecta state across the
   team.
 - **Shape:** sensor/console, like EDR, with one deliberate inversion: the hub has NO
   command channel. Gates push evidence up; nothing pushes down. An EDR-style central
   write path into developer machines would itself be a lethal-trifecta component and
   a single point of compromise; the hub's write path into gates is none (13.4 holds).
-- **Commercial boundary, stated plainly:** bawbel-gate is and stays Apache-2.0,
-  fully functional standalone, including its embedded console. The hub (multi-gate
-  ingest, fleet state, team console, posture report) is the paid product. The
-  boundary is drawn at "more than one gate", which is honest and easy to explain.
+- **Boundary:** bawbel-gate is and stays Apache-2.0, fully functional standalone,
+  including its embedded console. The optional hub (multi-gate ingest, fleet state,
+  team console, posture report) is for more than one gate. A single gate does not need
+  it.
 
 ### 14.2 Architecture
 
@@ -1119,7 +1120,7 @@ assembly plus identity, not new invention.
  10 x bawbel-gate (workstations)          bawbel-hub (one container)
  ┌─────────┐  audit records,   ┌───────────────────────────────────┐
  │ gate #1 │  NDJSON batches   │ ingest (13.2) ─▶ chain verify     │
- │  ...    │ ────mTLS push───▶ │      │                            │
+ │  ...    │ ────TLS push────▶ │      │                            │
  │ gate #10│                   │      ▼                            │
  └─────────┘                   │ replay ─▶ fleet state (Postgres   │
      ▲                         │            or SQLite)             │
@@ -1138,21 +1139,64 @@ not an architectural one.
 ### 14.3 Identity and enrollment
 
 - Each gate enrolls once: `bawbel-gate enroll --hub https://hub.internal:8443 --token <one-time>`.
-  The hub issues a per-gate mTLS client certificate; the certificate CN is the
-  `gate_id`. Enrollment tokens are single-use, minted by the hub CLI.
-- Attribution is structural: every audit record arrives on an authenticated channel
-  bound to one `gate_id`, and chains are verified per `(gate_id, session)`. There is
-  no self-reported identity anywhere in the pipeline.
+  The hub mints a per-gate secret and a `gate_id` and returns both in the response,
+  once. The hub stores a hash of the secret and not the secret. The gate stores both
+  locally with owner-only permissions.
+- Enrollment tokens are single-use, minted by an admin, and expire: the default
+  lifetime is 24 hours. An unused token can be revoked before it expires.
+- Ingest authenticates with the per-gate secret as `Authorization: Bearer <secret>`.
+  The hub takes the `gate_id` from the credential. The `{gate_id}` in the path of 13.2
+  is checked against it, and a mismatch is refused with 403. A value in the path or the
+  query string is never an identity.
+- Attribution is structural: every audit record arrives on a channel authenticated by
+  one gate's secret and bound to one `gate_id`, and chains are verified per
+  `(gate_id, session)`. There is no self-reported identity anywhere in the pipeline. A
+  per-gate secret identifies whoever holds it. It is not bound to a key pair that stays
+  on the machine, which is what the later mTLS step adds.
 - Developer display names map to `gate_id` in hub config; the hub never needs
   workstation credentials, directory integration, or agents beyond the gate itself.
   (SSO for console viewers is a v1.1 hub concern, not a gate concern.)
 
-**Implementation status: specified, not implemented.** The credential model above (the
-per-gate mTLS client certificate here and in the 13.2 transport) is not built. In the
-current code, ingest authenticates with the hub's shared admin token, `gate_id` is taken
-from the request path, and `hub serve` listens on plain HTTP. Until the per-gate
-credential ships, attribution is not structural. Single-use enrollment tokens are
-implemented. Tracked in [#49](https://github.com/bawbel/gate/issues/49).
+**Transport.** The hub serves plain HTTP and does not terminate TLS. The operator runs
+a TLS-terminating reverse proxy in front of it. The hub binds to loopback by default.
+It refuses to start on any other address unless it is started with the explicit option
+`--tls-terminated-by-proxy`, which declares that TLS is in front of it. Without TLS in
+front, the per-gate secret and the admin credentials cross the network in clear text.
+
+**Roles and credential lifetime.**
+
+- `admin` mints and revokes enrollment tokens and rotates admin credentials. `viewer`
+  reads fleet state and the other read-only views (14.4) and can do nothing else: it
+  cannot mint or revoke a token, post records, or change any state. Neither role can
+  send anything toward a gate (14.6).
+- The hub has one active admin credential. It has a lifetime of 30 days and can be
+  rotated without restarting the hub. Starting the hub reuses a valid admin credential
+  and does not mint another. If there is none, the hub mints one and shows it once. A
+  credential that has been rotated out keeps working for a grace period of 15 minutes
+  and is then removed. The hub also removes expired credentials from its database.
+- Admin credentials and enrollment tokens are stored as a SHA-256 hash of a long random
+  value, compared in constant time, and shown once.
+- The console authenticates with a login POST that sets a session cookie: `HttpOnly`,
+  `SameSite=Strict`, and `Secure` when TLS in front is declared. No credential is
+  accepted in a URL, in the path or in the query string.
+- `admin` revokes a gate's secret with a revoke command. Revocation is immediate:
+  ingest with that secret then returns 403. Records already stored stay. Re-enrolling
+  the gate issues a new secret. The hub keeps no revocation list.
+
+**mTLS later.** The model this section specified before, a per-gate client certificate
+issued by a hub-run CA with the certificate CN as the `gate_id`, is deferred, not
+dropped. It is a separate decision, recorded in its own ADR when it is taken.
+`docs/adr/0002-hub-per-gate-credential.md` records why the secret comes first.
+
+**Implementation status: specified, not implemented.** Nothing in the credential model
+above is built. In the current code, ingest authenticates with the hub's admin token,
+`gate_id` is taken from the request path, `hub serve` listens on plain HTTP, and the
+admin token is also accepted in the `?t=` query string.
+Admin tokens and enrollment tokens do not expire, and there is one role. `enroll`
+returns a `gate_id` that the gate does not keep, and the hub does not check that id on
+ingest. Until this ships, attribution is not structural. Single-use enrollment tokens
+are implemented. Tracked in [#49](https://github.com/bawbel/gate/issues/49) and
+[#179](https://github.com/bawbel/gate/issues/179).
 
 ### 14.4 Fleet state and console
 
