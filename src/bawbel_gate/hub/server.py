@@ -73,7 +73,7 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
     max_body_bytes: int = HUB_MAX_BODY_BYTES
     # Socket timeout for each read while the request line and headers arrive
     # (socketserver.StreamRequestHandler.timeout). The body has its own total deadline.
-    timeout: float = HUB_REQUEST_TIMEOUT_S
+    timeout = HUB_REQUEST_TIMEOUT_S
 
     def log_message(self, fmt: str, *args: Any) -> None:
         pass
