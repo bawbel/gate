@@ -5,9 +5,33 @@ date: 2026-11-25
 
 # 0004. Accountability data contract: stable identifiers and where each is minted (options)
 
-A draft for review, for [#212](https://github.com/bawbel/gate/issues/212). It proposes and decides
-nothing. No code, no schema file and no DESIGN.md text changes with it. Under CONTRIBUTING, each new
-record member is a DESIGN.md change that merges alone first.
+A draft for review, for [#212](https://github.com/bawbel/gate/issues/212). It proposes. The
+maintainer's written decision of 2026-11-25 is recorded in the Decision section, copied by the
+executor, who chose nothing. No code, no schema file and no DESIGN.md text changes with it. Under
+CONTRIBUTING, each new record member is a DESIGN.md change that merges alone first. The status stays
+`proposed` and the PR stays a draft until the maintainer has read it.
+
+## Decision
+
+**Decision: set B, maintainer, 2026-11-25.** Set A plus `agent_id` and `principal_id`, both labelled
+asserted, on `SESSION_START` only.
+
+- A separate member says that a value is asserted: `agent_id_source` for `agent_id` and
+  `principal_id_source` for `principal_id`. The member's own name does not carry that label.
+- `principal_id` is an opaque value the operator supplies. The gate holds no key and does no
+  pseudonymising. The documentation tells operators not to put an email address or a name in it.
+- Set C waits for the delegated-authority work (DEL-4). `decision_id`, `delegation_id` and
+  `evidence_id` need things that do not exist yet. Scope-change and approver events wait for it too.
+- Accountability stays inside the gate and the Hub, with no new repository.
+- The Hub keeps no incident objects of its own for now, so `incident_id` is outside set B and has
+  no owner for now.
+
+What this leaves for later, not decided here: where the operator supplies the two values (a
+configuration member or a flag), the accepted value syntax, and the DESIGN.md amendment that adds
+the four members, which merges alone before any code. A value that is stable for a person is still
+a stable reference to that person, and the log cannot be edited without breaking the chain, so what
+happens when a person asks for removal is open. The guidance to operators covers what to put in the
+value, not erasure.
 
 Each claim carries a tag. **VERIFIED**: run on 2026-11-25. **SOURCED**: a file read on 2026-11-25, at
 `develop` `92ea9d3` for this repository and at ACS commit `ee935751454eb58521b85ad5b73095e5540843c4`
@@ -67,7 +91,7 @@ SOURCED, ACS commit `ee935751454e`, `specification/v0.1.0/request-envelope.json`
 | `evidence_id` | no. No export bundle exists (DESIGN.md has only the draft 8.7) | the exporter, as the digest of the bundle's list of file digests | content-addressed | none by itself, and a bundle may hold personal data | no counterpart was found. UNVERIFIED | none | none | a proposal |
 | `incident_id` | no | the Hub operator, kept in the Hub and never inside the evidence records | assigned by the operator | notes may name people, so it stays out of the records | none | none | none | a proposal, blocked on whether the Hub keeps incident objects at all |
 
-## Smallest useful set. Options, none chosen
+## Smallest useful set. Options
 
 - **A. Nothing new.** `event_id` is the existing `hash`. `policy_id` is derived from `manifest_sha256`.
   The component id is the one in #183. Gives part of what an investigator asks for about the policy and
@@ -77,6 +101,8 @@ SOURCED, ACS commit `ee935751454e`, `specification/v0.1.0/request-envelope.json`
   log that cannot be edited without breaking the chain, and an operator who must supply the values.
 - **C. B, plus `decision_id`, `delegation_id` and `evidence_id`.** Each needs something that does not
   exist yet: a request id, a delegation model and an export. None is a first step.
+
+The maintainer chose B. See the Decision section.
 
 ## Versioning and backward compatibility
 
@@ -88,12 +114,18 @@ what an existing member means, or to the chain construction, is out of scope her
 
 ## Not decided
 
-- Which of A, B or C, or none.
-- Whether an asserted identity is labelled by a separate member or by the member's name.
-- How `principal_id` is pseudonymised, and who holds the key.
-- The two open decisions the accountability work depends on: whether it stays inside the gate and the
-  Hub, and whether the Hub keeps incident objects.
+Answered on 2026-11-25 (see Decision): which set (B), that an asserted identity is labelled by a
+separate `_source` member, that the gate does no pseudonymising and holds no key, that accountability
+stays inside the gate and the Hub, and that the Hub keeps no incident objects for now.
+
+Still open:
+
+- Where the operator supplies `agent_id` and `principal_id`, and what values are accepted.
+- Erasure: what happens to a value in a chained log when a person asks for removal.
+- The retention of a `principal_id`, which the candidates table also lists as open.
 - The mapping to OCSF, which is the subject of DESIGN.md 8.7 in #202.
+- The DESIGN.md amendment for the four new members (`agent_id`, `agent_id_source`, `principal_id`,
+  `principal_id_source`) and the format member of proposal P6 in #209.
 
 ## Not done
 
