@@ -1060,15 +1060,80 @@ ack. Crash at any point re-sends from the cursor; the dedup key
 | Status | Body | Gate behavior |
 |---|---|---|
 | `200` | `{"acked": {"6f1c92e4": 41205, ...}}` | advance cursors |
-| `409` | `{"error": "chain_mismatch", "session": "...", "expected_prev": "sha256:..."}` | re-send from indicated position; if local chain disagrees, raise `gate.chain.gap` locally and stop shipping that session |
-| `422` | `{"error": "schema", "index": 3}` | quarantine record, alert, continue batch remainder |
+| `409` | `{"error": "chain_mismatch", "reason": "seq_gap", "session": "...", "expected_prev": "sha256:...", "expected_seq": 41206}` | re-send from indicated position; if local chain disagrees, raise `gate.chain.gap` locally and stop shipping that session |
+| `422` | `{"error": "schema", "index": 3, "reason": "seq"}` | the batch was refused whole. Quarantine the record, alert, and stop shipping that session (OPEN, see below) |
 | `429` | `Retry-After: n` | back off; JSONL keeps buffering, nothing is lost |
+| `400` | `{"error": "bad_content_length"}` or `{"error": "incomplete_body"}` | fix the request |
+| `408` | `{"error": "request_timeout"}` | resend the batch |
+| `411` | `{"error": "length_required"}` | send a `Content-Length`. A chunked body is not accepted |
+| `413` | `{"error": "too_large", "max_bytes": 1048576}` | split the batch |
 
 **Chain verification on ingest.** The platform verifies `hash` and `prev` linkage per
 session on arrival. A gap or mismatch is not treated as a sync bug: it raises
 `gate.chain.gap` (critical, DESIGN.md 8.5) and quarantines the batch. The sync
 integrity check and the tamper-evidence control are the same code path by
 construction.
+
+**What the Hub accepts.** A batch is accepted whole or refused whole: nothing is stored from a
+batch that has one record the Hub cannot place. A record is accepted only as one of these:
+
+| Kind | Condition |
+|---|---|
+| replay | the Hub already holds that `(gate_id, session, seq)` and the record is identical to the held one. Nothing is stored and no counter moves |
+| next | the session is held, `seq` is the held head's `seq` plus one, `prev` is the held head's `hash`, and `hash` recomputes |
+| first | the session is not held, `seq` is 1, `prev` is the genesis value, and `hash` recomputes |
+| restart | the session is not held, the record is a `SESSION_START`, its `prev` is the `hash` of a record the Hub holds for the same `gate_id` that no held record already follows, its `seq` is that record's `seq` plus one, and `hash` recomputes |
+
+A gate resumes the chain from its audit log on each run, so a second run continues the chain and
+the `seq` under a new session id. That is the restart, and the only legitimate way for a `seq` to
+jump. A `409` carries one `reason`: `prev` (does not link), `hash` (does not recompute),
+`seq_gap` (`seq` is not the next one), `rewrite` (the Hub holds that `seq` with other content) or
+`fork` (a restart from a record that is already followed). `acked` is the highest `seq` in the
+batch that was verified, either stored now or already held identically. It is not the Hub's head,
+so a gate that resends an old prefix is told about that prefix only. A `422` means a record is not
+shaped like an audit record: not an object, a `session` that is not a non-empty string, a `seq`
+that is not an integer from 1 to 2^63-1, or a `hash` or `prev` that is missing or empty. Nothing
+from the record is echoed in the answer.
+
+**The restart rule, in full.** A record is a restart only if every one of these holds, and
+otherwise the batch is refused:
+
+1. The Hub does not hold the record's session. A record of a held session is a replay or a
+   `next` record, never a restart.
+2. The record's event is `SESSION_START`.
+3. Its `prev` is the `hash` of a record the Hub holds for the same `gate_id`, in any session of
+   that gate, or of a record accepted earlier in the same batch. A record of another gate never
+   counts. A `prev` that names no such record is refused with `prev`.
+4. That record is not followed: no held record of the gate, and no record accepted earlier in
+   the batch, has it as `prev`. A second restart from the same record is refused with `fork`.
+5. Its `seq` is that record's `seq` plus one. Any other `seq` is refused with `seq_gap`.
+6. Its `hash` recomputes with that `prev`.
+
+When a batch holds several sessions, they are checked in the order of their first record's
+`seq`, so a restart is explained by the records before it in the same batch whatever order the
+batch lists the sessions in. A first record with the genesis `prev` and a `seq` of 1 is a
+`first` record, not a restart: that is how a rotated log starts a new chain. Any other first
+record is refused, with `seq_gap` if its `prev` is the genesis value and `prev` otherwise.
+
+`acked` is the highest `seq`, per session, in the batch that was verified. A record that was
+stored now and a record the Hub already held identically both count. It is never the Hub's
+head: a gate that resends records 1 to 3 of a session the Hub holds to 6 is acked to 3, so its
+cursor cannot move past records it did not send.
+
+**Migration.** None is provided for rows that earlier ingest code stored without verifying them
+(a record with a `hash` and no `prev`). No such database is known, and nothing repairs one.
+
+**Request limits.** The Hub reads a body only up to a configured size (default 1 MiB, about ten
+times a full batch of 200 decision records) and answers a larger `Content-Length` with `413`
+before reading any of it. A body has a total deadline (default 10 s). The server runs one thread
+per connection, so a client that stalls holds its own thread. Not yet bounded: the time a client
+may take to send its headers, the number of threads, and the rate per credential (HUB-R12).
+
+**OPEN.** (1) Whether a refused batch is kept in a quarantine table, which 13.2 above still says
+and which nothing implements. (2) What a gate does after a `422`: skipping the bad record would
+leave a gap, so the draft says stop shipping that session. (3) Answered: the maintainer accepted the
+restart rule as implemented on 2026-11-26, so a restart may name any unfollowed record of the
+gate. (4) Whether the default limits are right.
 
 **Retention interaction.** Local JSONL rotation is permitted only past the acked
 cursor in fleet mode; in local-only mode, rotation policy is operator-defined and
