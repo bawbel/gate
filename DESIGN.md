@@ -679,6 +679,45 @@ everything unobserved gets the wildcard `deny`; write-class tools on trifecta-co
 servers get `approve` regardless of observation. The report doubles as the first-run
 demo: "everything your agents did last week that no one explicitly authorized."
 
+#### 7.5.1 The approval channel
+
+**Draft, specified, not implemented.** Tracked in
+[#227](https://github.com/bawbel/gate/issues/227). Points marked **OPEN** list their
+options and choose none. This subsection changes nothing else in this section or in the
+policy engine.
+
+An approval records a human's decision. The channel that carries the question and the
+answer is therefore independent of the transport that carries the agent's requests: nothing
+that arrives on the agent-facing transport, or on an upstream server's pipes, is read as an
+approval answer. The requirements that follow:
+
+1. **The terminal channel reads the operator's terminal device.** It does not read a stream
+   that the gate also uses for MCP traffic. OPEN: the mechanism on each platform (the
+   controlling terminal on POSIX, the console input device on Windows), and how the prompt
+   reaches the operator when the gate runs under a host that has no terminal.
+2. **No device, no approval.** If the channel cannot be obtained, the call is denied, with a
+   reason code of its own, and the denial is recorded like any other. This is the same fail
+   closed rule as the timeout (7.5, `APPROVAL_ON_TIMEOUT`). OPEN: the reason code name.
+3. **A channel that shares a stream with the agent-facing transport is opt-in.** It is
+   available only when the operator selects it with an explicit option, and the selection is
+   recorded in the audit log. OPEN: the option's name, and which record carries the member.
+4. **The other channels keep their own rules.** The console channel (13.1) and any webhook
+   or chat channel are separate channels with their own authentication. This subsection adds
+   no channel and does not change them.
+
+What the implementation PR tests first, as property tests committed before the code
+(CONTRIBUTING.md, "Property test before implementation"). None is written here:
+
+- no input that arrives on the agent-facing transport is treated as an approval answer;
+- with no terminal device available, the call is denied with the reason code and a record is
+  written;
+- the explicit option is the only way a shared-stream channel is selected, and the record
+  says it was selected;
+- a timeout still denies.
+
+**Implementation status.** Not implemented. The implementation is a separate PR after this
+subsection merges alone.
+
 ## 8. Integrity pinning and drift detection
 
 ### 8.1 Tool schema pinning
