@@ -189,7 +189,7 @@ HUB_DEFAULT_PORT = 8443
 # record is a few hundred bytes, so 1 MiB is several times a full batch.
 HUB_MAX_BODY_BYTES = 1_048_576
 HUB_REQUEST_TIMEOUT_S = 10.0   # whole-body deadline, and the socket timeout while reading headers
-HUB_LINGER_S = 1.0             # after an early refusal, how long to drain what the client still sends
+HUB_LINGER_S = 1.0             # after an early refusal, how long to drain the client's bytes
 HUB_LINGER_MAX_BYTES = 1_048_576
 
 # --- Internal server tuning ---

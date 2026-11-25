@@ -481,7 +481,9 @@ def hub_group() -> None:
     type=click.FloatRange(min=0, min_open=True), envvar="BAWBEL_HUB_REQUEST_TIMEOUT_S",
     help="Seconds a client may take to send a request body. Env: BAWBEL_HUB_REQUEST_TIMEOUT_S.",
 )
-def hub_serve(db: Path, port: int, host: str, max_body_bytes: int, request_timeout_s: float) -> None:
+def hub_serve(
+    db: Path, port: int, host: str, max_body_bytes: int, request_timeout_s: float
+) -> None:
     """Start the bawbel-hub ingest + fleet console server. See DESIGN.md 14."""
     from bawbel_gate.hub.store import FleetStore
     from bawbel_gate.hub.enroll import EnrollmentRegistry

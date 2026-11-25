@@ -286,7 +286,7 @@ class HubServer:
         max_body_bytes: int = HUB_MAX_BODY_BYTES,
         request_timeout_s: float = HUB_REQUEST_TIMEOUT_S,
     ) -> None:
-        if not isinstance(max_body_bytes, int) or isinstance(max_body_bytes, bool) or max_body_bytes < 1:
+        if type(max_body_bytes) is not int or max_body_bytes < 1:
             raise ValueError("max_body_bytes must be a positive integer")
         if not isinstance(request_timeout_s, (int, float)) or isinstance(request_timeout_s, bool) \
                 or request_timeout_s <= 0:

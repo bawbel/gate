@@ -21,6 +21,7 @@ problem, 422 for a record that is not shaped like an audit record.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import signal
 import socket
@@ -96,7 +97,8 @@ def _started(session: str) -> dict:
 
 
 def _read(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
 
 
 def _chain(tmp_path: Path, session: str, count: int, effect: str = EFFECT_ALLOW,
@@ -120,7 +122,9 @@ def _two_runs(tmp_path: Path, first: int = 2, second: int = 2) -> tuple[list[dic
     for i in range(second - 1):
         w2.append(_decided("s2", EFFECT_DENY, i))
     records = _read(path)
-    return ([r for r in records if r["session"] == "s1"], [r for r in records if r["session"] == "s2"])
+    first = [r for r in records if r["session"] == "s1"]
+    second = [r for r in records if r["session"] == "s2"]
+    return first, second
 
 
 def _rehash(record: dict, prev: str) -> dict:
@@ -160,9 +164,29 @@ def _post(base: str, token: str, gate: str, records: list[dict]) -> tuple[int, d
 
 
 def _get_state(base: str, token: str, timeout: float = 5.0) -> int:
-    req = urllib.request.Request(f"{base}/v1/fleet/state", headers={"Authorization": f"Bearer {token}"})
+    req = urllib.request.Request(
+        f"{base}/v1/fleet/state", headers={"Authorization": f"Bearer {token}"}
+    )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.status
+
+
+def _bogus() -> dict:
+    """C3.7: a hash, no prev, and a seq of 1000000."""
+    return {
+        "seq": 1000000, "session": "s1", "event": EVENT_CALL_DECIDED, "hash": "sha256:" + "ab" * 32,
+    }
+
+
+def _post_head(token: str, *headers: str) -> bytes:
+    """The request line and headers of an authenticated ingest POST, and no body."""
+    lines = [
+        "POST /v1/gates/gate-a/records HTTP/1.1",
+        "Host: x",
+        f"Authorization: Bearer {token}",
+        *headers,
+    ]
+    return ("\r\n".join(lines) + "\r\n\r\n").encode()
 
 
 def _raw(port: int, payload: bytes) -> socket.socket:
@@ -191,10 +215,15 @@ class TestRecordsThatAreNotAuditRecords:
         store = FleetStore(":memory:")
         records = _chain(tmp_path, "s1", 3, EFFECT_DENY)
         process_batch("gate-a", records, store)
-        bogus = {"seq": 1000000, "session": "s1", "event": EVENT_CALL_DECIDED, "hash": "sha256:" + "ab" * 32}
+        bogus = _bogus()
         with pytest.raises(IngestSchemaError):
             process_batch("gate-a", [bogus], store)
-        forged = dict(_decided("s1", EFFECT_DENY, 3), seq=4, prev="sha256:" + "11" * 32, hash="sha256:" + "22" * 32)
+        forged = dict(
+            _decided("s1", EFFECT_DENY, 3),
+            seq=4,
+            prev="sha256:" + "11" * 32,
+            hash="sha256:" + "22" * 32,
+        )
         with pytest.raises(ChainMismatch):
             process_batch("gate-a", [forged], store)
         assert store.record_count("gate-a", "s1") == 3
@@ -237,7 +266,7 @@ class TestRecordsThatAreNotAuditRecords:
     def test_over_http_the_bypass_gets_422_and_the_chain_still_ingests(self, tmp_path):
         base, token, server, store = _start_hub()
         try:
-            bogus = {"seq": 1000000, "session": "s1", "event": EVENT_CALL_DECIDED, "hash": "sha256:" + "ab" * 32}
+            bogus = _bogus()
             status, body = _post(base, token, "gate-a", [bogus])
             assert (status, body["error"], body["index"]) == (422, "schema", 0)
             status, body = _post(base, token, "gate-a", _chain(tmp_path, "s1", 3))
@@ -294,7 +323,8 @@ class TestRewrite:
             r4 = _rehash(_decided("s1", EFFECT_DENY, 3) | {"seq": 4}, original[2]["hash"])
             status, body = _post(base, token, "gate-a", [r4])
             assert status == 409
-            assert (body["error"], body["reason"], body["session"]) == ("chain_mismatch", "rewrite", "s1")
+            got = (body["error"], body["reason"], body["session"])
+            assert got == ("chain_mismatch", "rewrite", "s1")
             assert store.get_chain_head("gate-a", "s1")["last_hash"] == original[3]["hash"]
         finally:
             server.stop()
@@ -388,7 +418,8 @@ class TestSeqGap:
         try:
             status, body = _post(base, token, "gate-a", _chain_with_seqs([1, 2, 5, 6]))
             assert status == 409
-            assert (body["error"], body["reason"], body["expected_seq"]) == ("chain_mismatch", "seq_gap", 3)
+            got = (body["error"], body["reason"], body["expected_seq"])
+            assert got == ("chain_mismatch", "seq_gap", 3)
             assert store.record_count("gate-a", "s1") == 0
         finally:
             server.stop()
@@ -463,10 +494,11 @@ class TestRestart:
             process_batch("gate-a", s2, store)
 
     def test_a_new_chain_from_genesis_with_a_new_session_is_still_a_first_record(self, tmp_path):
-        """A rotated log starts again at seq 1 with the genesis value (DESIGN.md 13.2, retention)."""
+        """A rotated log starts again at seq 1 with the genesis value (DESIGN.md 13.2)."""
         store = FleetStore(":memory:")
         process_batch("gate-a", _chain(tmp_path, "s1", 3, name="old.jsonl"), store)
-        assert process_batch("gate-a", _chain(tmp_path, "s9", 2, name="new.jsonl"), store).acked == {"s9": 2}
+        fresh = _chain(tmp_path, "s9", 2, name="new.jsonl")
+        assert process_batch("gate-a", fresh, store).acked == {"s9": 2}
 
 
 # ---------------------------------------------------------------------------
@@ -500,9 +532,7 @@ class TestBodyCap:
         base, token, server, store = _start_hub()
         try:
             # The body is never sent: the answer must not wait for it.
-            sock = _raw(server.port, (f"POST /v1/gates/gate-a/records HTTP/1.1\r\nHost: x\r\n"
-                                      f"Authorization: Bearer {token}\r\n"
-                                      f"Content-Length: {60 * 1024 * 1024}\r\n\r\n").encode())
+            sock = _raw(server.port, _post_head(token, f"Content-Length: {60 * 1024 * 1024}"))
             first = sock.recv(256).split(b"\r\n", 1)[0]
             sock.close()
             assert b" 413 " in first, first
@@ -511,11 +541,10 @@ class TestBodyCap:
 
     @pytest.mark.parametrize("length", ["abc", "-1", "1e3", " "])
     def test_a_content_length_that_is_not_a_number_gets_400(self, length):
-        """C6.5: `abc` closed the connection with no answer, and -1 read to the end of the stream."""
+        """C6.5: `abc` closed the connection with no answer, and -1 read to the end of the body."""
         base, token, server, store = _start_hub()
         try:
-            sock = _raw(server.port, (f"POST /v1/gates/gate-a/records HTTP/1.1\r\nHost: x\r\n"
-                                      f"Authorization: Bearer {token}\r\nContent-Length: {length}\r\n\r\n").encode())
+            sock = _raw(server.port, _post_head(token, f"Content-Length: {length}"))
             first = sock.recv(256).split(b"\r\n", 1)[0]
             sock.close()
             assert b" 400 " in first, first
@@ -526,9 +555,7 @@ class TestBodyCap:
     def test_a_chunked_body_is_not_silently_read_as_empty(self):
         base, token, server, store = _start_hub()
         try:
-            sock = _raw(server.port, (f"POST /v1/gates/gate-a/records HTTP/1.1\r\nHost: x\r\n"
-                                      f"Authorization: Bearer {token}\r\nTransfer-Encoding: chunked\r\n\r\n"
-                                      f"0\r\n\r\n").encode())
+            sock = _raw(server.port, _post_head(token, "Transfer-Encoding: chunked") + b"0\r\n\r\n")
             first = sock.recv(256).split(b"\r\n", 1)[0]
             sock.close()
             assert b" 411 " in first or b" 501 " in first, first
@@ -552,8 +579,7 @@ class TestStalledClients:
     def test_an_authenticated_post_that_promises_a_body_and_sends_none_does_not_block_another(self):
         """C6.1, second line: it promised 100 bytes and sent none."""
         base, token, server, store = _start_hub(request_timeout_s=3.0)
-        stalled = _raw(server.port, (f"POST /v1/gates/gate-a/records HTTP/1.1\r\nHost: x\r\n"
-                                     f"Authorization: Bearer {token}\r\nContent-Length: 100\r\n\r\n").encode())
+        stalled = _raw(server.port, _post_head(token, "Content-Length: 100"))
         try:
             started = time.monotonic()
             assert _get_state(base, token, timeout=2.0) == 200
@@ -564,8 +590,7 @@ class TestStalledClients:
 
     def test_a_stalled_connection_is_closed_by_the_server_after_the_timeout(self):
         base, token, server, store = _start_hub(request_timeout_s=0.5)
-        stalled = _raw(server.port, (f"POST /v1/gates/gate-a/records HTTP/1.1\r\nHost: x\r\n"
-                                     f"Authorization: Bearer {token}\r\nContent-Length: 100\r\n\r\n").encode())
+        stalled = _raw(server.port, _post_head(token, "Content-Length: 100"))
         try:
             stalled.settimeout(4.0)
             data = b""
@@ -583,8 +608,7 @@ class TestStalledClients:
         """One byte now and then keeps a per-read timeout alive for ever. The deadline is for the
         whole body."""
         base, token, server, store = _start_hub(request_timeout_s=1.0)
-        sock = _raw(server.port, (f"POST /v1/gates/gate-a/records HTTP/1.1\r\nHost: x\r\n"
-                                  f"Authorization: Bearer {token}\r\nContent-Length: 100\r\n\r\n").encode())
+        sock = _raw(server.port, _post_head(token, "Content-Length: 100"))
         try:
             started = time.monotonic()
             closed_at = None
@@ -619,10 +643,8 @@ class TestStalledClients:
             def get_chain_head(self, gate_id, session_id):
                 head = super().get_chain_head(gate_id, session_id)
                 if self.armed:
-                    try:
+                    with contextlib.suppress(threading.BrokenBarrierError):
                         self.barrier.wait()
-                    except threading.BrokenBarrierError:
-                        pass
                 return head
 
         store = _RacyStore(":memory:")
@@ -674,13 +696,16 @@ class TestServerOptions:
         assert "--max-body-bytes" in out and "BAWBEL_HUB_MAX_BODY_BYTES" in out
         assert "--request-timeout" in out and "BAWBEL_HUB_REQUEST_TIMEOUT_S" in out
 
-    @pytest.mark.parametrize("flag,value", [("--max-body-bytes", "0"), ("--max-body-bytes", "-5"),
-                                             ("--request-timeout", "0"), ("--request-timeout", "abc")])
+    @pytest.mark.parametrize("flag,value", [
+        ("--max-body-bytes", "0"), ("--max-body-bytes", "-5"),
+        ("--request-timeout", "0"), ("--request-timeout", "abc"),
+    ])
     def test_a_bad_limit_is_refused_by_the_cli(self, flag, value):
         from click.testing import CliRunner
 
         from bawbel_gate.cli import main
 
-        result = CliRunner().invoke(main, ["hub", "serve", "--db", ":memory:", "--port", "0", flag, value])
+        args = ["hub", "serve", "--db", ":memory:", "--port", "0", flag, value]
+        result = CliRunner().invoke(main, args)
         assert result.exit_code == 2
         assert "Invalid value" in result.output  # not "No such option"

@@ -81,7 +81,10 @@ class ChainMismatch(ValueError):
 
 
 class IngestSchemaError(ValueError):
-    """Raised when a record is not shaped like an audit record. `index` is its position in the batch."""
+    """Raised when a record is not shaped like an audit record.
+
+    `index` is its position in the batch.
+    """
 
     def __init__(self, index: int, reason: str) -> None:
         self.index = index
@@ -164,14 +167,16 @@ class _Batch:
         return self._store.get_record(self._gate_id, session, seq)
 
     def seq_of(self, record_hash: str) -> int | None:
-        """The seq of a record this gate holds, or has had accepted in this batch, with this hash."""
+        """The seq of a record with this hash that this gate holds or this batch has accepted."""
         mine = self._by_hash.get(record_hash)
         if mine is not None:
             return mine[1]
         return self._store.find_seq_by_hash(self._gate_id, record_hash)
 
     def is_followed(self, record_hash: str) -> bool:
-        return record_hash in self._followed or self._store.has_successor(self._gate_id, record_hash)
+        if record_hash in self._followed:
+            return True
+        return self._store.has_successor(self._gate_id, record_hash)
 
     def accept(self, session: str, record: dict[str, Any]) -> None:
         self._heads[session] = (record["seq"], record["hash"])
@@ -212,14 +217,20 @@ def _verify_one(session: str, record: dict[str, Any], batch: _Batch) -> None:
     if head is not None and seq <= head[0]:
         if batch.held(session, seq) == record:
             return
-        raise ChainMismatch(session, head[1], prev, reason=REFUSED_REWRITE, expected_seq=head[0] + 1)
+        raise ChainMismatch(
+            session, head[1], prev, reason=REFUSED_REWRITE, expected_seq=head[0] + 1
+        )
 
     if head is not None:
         expected_seq, expected_prev = head[0] + 1, head[1]
         if seq != expected_seq:
-            raise ChainMismatch(session, expected_prev, prev, reason=REFUSED_SEQ_GAP, expected_seq=expected_seq)
+            raise ChainMismatch(
+                session, expected_prev, prev, reason=REFUSED_SEQ_GAP, expected_seq=expected_seq
+            )
         if prev != expected_prev:
-            raise ChainMismatch(session, expected_prev, prev, reason=REFUSED_PREV, expected_seq=expected_seq)
+            raise ChainMismatch(
+                session, expected_prev, prev, reason=REFUSED_PREV, expected_seq=expected_seq
+            )
     else:
         expected_prev = _first_record_prev(session, record, batch)
 
