@@ -128,7 +128,7 @@ After:
 schema: bawbel/gate-config/v1
 audit_log: /var/log/bawbel/gate.audit.jsonl
 approval:
-  channel: terminal          # terminal | webhook | slack
+  channel: terminal          # only terminal is implemented; webhook and slack are reserved
   webhook_url: null
   timeout_seconds: 120
   on_timeout: deny
@@ -142,6 +142,14 @@ servers:
     args: ["--root", "/work"]
     manifest: /etc/bawbel/manifests/fs-mcp.cap.yaml
 ```
+
+**Approval channel.** Only `terminal` is implemented. `webhook` and `slack` are reserved names,
+kept in this enum and in the manifest schema (4.2): a `gate.yaml` that sets one is refused at
+load with a config error, and the gate does not start. A channel that is accepted and ignored is
+a silent failure, and the gate does not have one. A non-null `webhook_url` with the `terminal`
+channel is accepted, is not used, and is reported with a warning on stderr that never contains the
+URL. Decided by the maintainer on 2026-11-26. Tracked in
+[#239](https://github.com/bawbel/gate/issues/239).
 
 ### 3.2 Tool namespacing
 
