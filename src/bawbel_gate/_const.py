@@ -84,6 +84,10 @@ ARGS_SHA256_DEFAULT = None  # args hashed, not stored, by default
 # --- Approval (see DESIGN.md 7.5) ---
 APPROVAL_TIMEOUT_DEFAULT_S = 120
 APPROVAL_ON_TIMEOUT = EFFECT_DENY  # fail-closed; not configurable
+# Channel names the config and manifest schemas accept (DESIGN.md 3.1). Only the terminal channel
+# is implemented. The others are reserved names, and a config that sets one is refused.
+APPROVAL_CHANNEL_TERMINAL = "terminal"
+APPROVAL_CHANNELS_RESERVED = ("webhook", "slack")
 
 # --- Latency budget (see DESIGN.md 11.2, IMPLEMENTATION_PLAN.md M4) ---
 LATENCY_P95_MAX_MS = 5

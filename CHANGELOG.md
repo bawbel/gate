@@ -19,6 +19,14 @@ itemized here; this file picks up from that baseline.
   change the exit code.
 ### Fixed
 
+- **Behaviour change:** `approval.channel: webhook` and `slack` are refused at config load, and
+  `serve` stops with `bawbel-gate: config error: approval.channel 'slack' is not implemented;
+  'terminal' is the only channel available` and exit 1 (#239). They used to load with no error and
+  no warning, and nothing read them, so approvals were handled as if `terminal` had been set. The
+  names stay in the DESIGN.md enum and the manifest schema, so they remain reserved. A non-null
+  `webhook_url` with the terminal channel still loads and now writes a warning to stderr that never
+  contains the URL. Migration: set `channel: terminal`, or drop the `approval.channel` key, in each
+  `gate.yaml` that names `webhook` or `slack`.
 - The gate completes the MCP handshake with each upstream server (#27). `initialize`
   carries `protocolVersion`, `capabilities` and `clientInfo`, and
   `notifications/initialized` follows the response. A server that answers `initialize`

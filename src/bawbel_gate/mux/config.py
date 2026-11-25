@@ -13,10 +13,13 @@ from typing import Any
 import yaml
 
 from bawbel_gate._const import (
+    APPROVAL_CHANNEL_TERMINAL,
+    APPROVAL_CHANNELS_RESERVED,
     APPROVAL_TIMEOUT_DEFAULT_S,
     EFFECT_DENY,
     SCHEMA_GATE_CONFIG_V1,
 )
+from bawbel_gate.mux.transport import warn
 
 
 @dataclass(frozen=True)
@@ -35,7 +38,13 @@ class ApprovalConfig:
     on_timeout: str = EFFECT_DENY   # fail-closed; only valid value
 
     def __post_init__(self) -> None:
-        if self.channel not in ("terminal", "webhook", "slack"):
+        if self.channel in APPROVAL_CHANNELS_RESERVED:
+            # A channel that is accepted and ignored is a silent failure: refuse it (DESIGN.md 3.1).
+            raise ConfigError(
+                f"approval.channel {self.channel!r} is not implemented; "
+                f"{APPROVAL_CHANNEL_TERMINAL!r} is the only channel available"
+            )
+        if self.channel != APPROVAL_CHANNEL_TERMINAL:
             raise ConfigError(
                 f"approval.channel must be terminal|webhook|slack, got {self.channel!r}"
             )
@@ -70,6 +79,9 @@ def load_config(path: Path) -> GateConfig:
     raw = _read_yaml(path)
     _check_schema_id(raw)
     approval = _parse_approval(raw.get("approval", {}))
+    if approval.webhook_url:
+        # Never the value: a webhook URL often carries a secret.
+        warn("approval.webhook_url is set and approval.channel is terminal: the URL is not used")
     servers = _parse_servers(raw.get("servers", []), path.parent)
     audit = Path(raw.get("audit_log", "gate.audit.jsonl"))
     return GateConfig(audit_log=audit, servers=servers, approval=approval)
