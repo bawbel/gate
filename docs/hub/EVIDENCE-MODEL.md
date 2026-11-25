@@ -153,7 +153,8 @@ Already known: no agent identity or owner, no scope-change record, no approver r
 Found by this work:
 
 - No request id, no rule id and no result or outcome in `CALL_DECIDED`, and `ts` marks the end of the
-  call.
+  call. The `Decision` type has a `rule_ids` field that nothing in `src/` fills, so it is always empty
+  (SOURCED: `policy/engine.py`, and `git grep` finds no use).
 - Six event names are defined and never written, including every approval event.
 - The manifest schema has no owner, reviewer, approver or contact field, so no record names the person
   who is responsible for a grant.
@@ -175,7 +176,7 @@ record has.
 | P1 | An agent identity and owner member, recorded as **asserted** | Q1, Q7 | that the claim is true. The gate cannot verify who is behind the host | A: set in `gate.yaml` and written on `SESSION_START`. B: read from the environment at start. C: neither, and leave it to the Hub operator |
 | P2 | Approval records: a request, an outcome and an approver as **asserted** by the channel | Q4 | that a human answered. A channel answers, and the gate records what the channel says | A: write the existing `APPROVAL_*` names. B: add approval members to `CALL_DECIDED`. C: one new event that closes an approval |
 | P3 | A record of a scope change | Q6 | who changed it, unless an outside system records that | A: no gate change, and the Hub compares `manifest_hashes` between sessions. B: a new event at start that carries the previous digest. C: a change record kept in the operator's repository, outside the log |
-| P4 | A rule id on `CALL_DECIDED` | Q3 | nothing beyond which grant matched | A: write the `rule_ids` the decision already holds. B: leave it out |
+| P4 | A rule id on `CALL_DECIDED` | Q3 | nothing beyond which grant matched | A: fill and write `rule_ids`. The `Decision` type has that field, nothing in `src/` fills it, and it is always empty. B: leave it out |
 | P5 | A request time, and a result status, on `CALL_DECIDED` | Q8, and part of Q4 | what a downstream system did | A: add both. B: add the request time only. C: neither |
 | P6 | A format version member | every question that depends on how a member was computed | nothing about content | A: on `SESSION_START`. B: on every record. C: none |
 
