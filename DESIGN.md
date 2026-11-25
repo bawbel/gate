@@ -757,6 +757,12 @@ hash = "sha256:" + lowercase_hex(sha256(canonical_json(record minus hash) || utf
 - `prev` is concatenated as the UTF-8 bytes of its `sha256:<hex>` text (71 bytes), not
   as the raw 32-byte digest. The first record's `prev` is `sha256:` followed by 64
   zeros.
+- `seq` is 1 for the first record in a file and rises by 1 for every record after it,
+  across sessions: a restart resumes the chain and the `seq` from the file, so a new
+  session's `SESSION_START` carries the next `seq`. `audit verify` fails at the first record
+  whose `seq` is not the previous plus one, whatever its `prev` and `hash` say. A log that
+  starts again at 1 is a new file and chain, not a restart. This narrows what the chain
+  leaves open and does not close it: a party who can recompute every hash can renumber.
 
 Gate chains are not cross-verifiable with ACS v0.1.0 ContextEntry chains, which use
 JCS, drop both hash fields, and concatenate the raw previous digest.
