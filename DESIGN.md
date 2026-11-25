@@ -768,6 +768,186 @@ Vault KV, or a transparency log later). `bawbel-gate audit verify <file>` replay
 chain. Argument payloads are hashed, not stored, by default; `--store-args` exists
 for regulated deployments with their own encryption at rest.
 
+### 8.7 Audit export
+
+**Draft, specified, not implemented.** Tracked in
+[#201](https://github.com/bawbel/gate/issues/201). Points marked **OPEN** list their
+options and choose none. This section changes nothing in the audit log (8.6), the hash
+chain or any other section.
+
+#### 8.7.1 What it is, and what it is not
+
+`bawbel-gate audit export` reads an audit log (8.6) and writes a derived feed in a form a
+SIEM reads. The hash-chained JSONL stays the forensic source of truth (8.5). An export is a
+feed: it is not a chain, and `audit verify` does not read it.
+
+- It reads the file and writes somewhere else. It never appends to the log, never opens a
+  network connection, and never writes an argument payload, because the log holds none (8.6).
+- It is not the OpenTelemetry exporter of 8.5, which emits spans while the gate runs. It runs
+  on a file, afterwards.
+- It is not the CEF and syslog formatter that exists today (`ops/syslog_cef.py`). That one
+  formats the six alertable event classes of 8.5, not audit records.
+- It is not an ACS conformance claim. The gate makes none (`docs/ACS_CONFORMANCE.md`).
+
+#### 8.7.2 The mapping source
+
+The OCSF mapping is the ACS file `specification/v0.1.0/trace/ocsf-mapping.json`. This draft
+was written against ACS commit `ee935751454eb58521b85ad5b73095e5540843c4` (2026-11-20,
+`version.txt` 0.1.5), read as data on 2026-11-25. Nothing from that repository was run. The
+file says of itself: "v0.1.0 conformance requires that a deployment emitting OCSF for the
+Trace pillar uses these class UIDs and severity rules verbatim. Class UIDs, class names and
+activity IDs are those of OCSF 1.9.0." The gate adds no class UID of its own: every class UID
+in an export is one that file names.
+
+The file moves. Between `db5c89e4`, the commit `docs/ACS_CONFORMANCE.md` is measured against,
+and the commit above, it gained 122 lines and lost 13. Three steps were added
+(`steps/skillRegister`, `steps/skillLoad`, `steps/skillUnload`). `agbom/snapshot` and
+`agbom/changed` stayed class 5001 but changed from "Inventory Info" with no activity to
+"Device Inventory Info" with activity 2. The decision rules grew from three members to
+thirteen. How the gate pins the file is OPEN (8.7.8).
+
+The entries at that commit that bear on the gate's events:
+
+| ACS entry | OCSF class | Activity |
+|---|---|---|
+| `steps/sessionStart` | 3002 Authentication | 1 |
+| `steps/sessionEnd` | 3002 Authentication | 2 |
+| `steps/toolCallRequest`, `steps/toolCallResult` | 1007 Process Activity | none given |
+| `agbom/changed` | 5001 Device Inventory Info | 2 |
+| a decision of deny, ask, defer or modify | 2004 Detection Finding | none given |
+| a decision of allow | 6002 Application Lifecycle, severity 1, unless the deployment elects Detection Findings for allows | none given |
+
+The defaults the file gives a decision, by ACS disposition:
+
+| Disposition | action_id | disposition_id | severity_id | is_alert |
+|---|---|---|---|---|
+| allow | 1 | 1 | 1 | false |
+| deny | 2 | 2 | 4 | true |
+| modify | 4 | 99 | 2 | false |
+| ask | 99 | 99 | 3 | true |
+| defer | 99 | 99 | 3 | true |
+
+The gate's effects relate to ACS dispositions as `docs/ACS_CONFORMANCE.md` already states:
+`allow` is ALLOW, `deny` is DENY and `approve` is ASK. No gate effect is MODIFY or DEFER.
+
+#### 8.7.3 The events the gate writes
+
+The `append` call sites in `src/` write five event types. The other event names defined in
+`_const.py` are not written at any `append` call site.
+
+| Event | Written by | The ACS entry it corresponds to |
+|---|---|---|
+| `SESSION_START` | `serve`, at start | `steps/sessionStart` |
+| `SESSION_END` | `serve`, at end | `steps/sessionEnd` |
+| `CALL_DECIDED` | `serve`, once per `tools/call` | a decision about a `steps/toolCallRequest` (8.7.4) |
+| `DRIFT_DETECTED` | `serve` | none by name. `docs/ACS_GATE_MAPPING.md` section 3 relates a tool schema drift to `agbom/changed` (8.7.5) |
+| `SESSION_CLEAR` | the `clear` command | none (8.7.5) |
+
+A record has `session` and `seq`. It has no request id. ACS's join fields are `request_id` and
+`session_id`, and its `metadata.correlation_uid` is `<session_id>:<request_id>`. What the gate
+puts there is OPEN (8.7.4).
+
+#### 8.7.4 What a CALL_DECIDED becomes. OPEN
+
+Options, none chosen:
+
+- **A.** One decision event per record, as the ACS decision rules say: deny and approve (ASK)
+  as Detection Findings (2004), allow as Application Lifecycle (6002) with severity 1, or as a
+  Detection Finding if the deployment elects it. The tool call as a 1007 step is not exported.
+- **B.** One 1007 Process Activity event per record, with the decision as members under
+  `unmapped.gate`. No Detection Finding. This does not follow the ACS decision rules.
+- **C.** Both per record, a 1007 step event and a decision event, joined by
+  `metadata.correlation_uid`.
+
+For `metadata.correlation_uid` and the join fields, the gate has `session` and `seq` and no
+request id. Options, none chosen: write `<session>:<seq>`, a value the gate defines in ACS's
+format, or leave the join fields out.
+
+#### 8.7.5 Events with no ACS entry. OPEN
+
+`DRIFT_DETECTED` and `SESSION_CLEAR`. Options, none chosen:
+
+- **A.** Omit both, and say so in the first line of the export.
+- **B.** Emit both under a class the ACS file already names (for example 6002), with the gate's
+  members under `unmapped.gate`, and name the class and the reason in the export's first line.
+- **C.** Emit `DRIFT_DETECTED` under the class the file gives `agbom/changed`, which
+  `docs/ACS_GATE_MAPPING.md` section 3 already relates to tool schema drift, and omit
+  `SESSION_CLEAR`.
+- **D.** Hold both until ACS names an entry.
+
+In every option no class UID comes from anywhere but the ACS file.
+
+#### 8.7.6 What a deny says. OPEN
+
+The ACS decision rules say that "an action_id of 2 (Denied) or a disposition_id of 2 (Blocked)
+never proves the action was blocked", because only the Observed Agent sees the enforced outcome.
+The gate is the enforcement point: a denied call is not forwarded to the upstream. Options,
+none chosen:
+
+- **A.** Use the ACS defaults as they stand: action_id 2 and disposition_id 2 for a deny.
+- **B.** The same ids, with a member under `unmapped.gate` that says the call was not forwarded.
+
+Whichever is chosen, the export does not say that it proves anything about the upstream.
+
+#### 8.7.7 What an export carries and never carries
+
+It never carries an argument payload or a tool result (the log holds `args_sha256` only), a
+credential, or a value read from outside the log. It carries the members of a record that the
+chosen mapping places.
+
+Whether an exported event can be traced to its record is OPEN. Carry `session`, `seq`, `hash`
+and `prev` under `unmapped.gate`: **A.** always, **B.** only with a flag, **C.** never. With C
+an event cannot be matched to a chain position, and a round-trip test cannot be written.
+
+#### 8.7.8 Pinning the mapping. OPEN
+
+ACS states that `specification/**` is under Apache-2.0 (`LICENSING.md` at the commit above),
+the licence this repository carries. Options, none chosen:
+
+- **A.** A copy of the file in this repository, with the ACS commit and git blob id recorded,
+  and a test that every class UID in an export is in it.
+- **B.** The values as constants in code, with a test against a copy of the file kept under
+  `tests/`.
+- **C.** A file the operator supplies at run time. The export refuses an entry it does not
+  know.
+
+Also open: whether to pin the commit named in 8.7.2 or a newer one, and who updates the pin and
+when. Whether to copy the file at all is the maintainer's decision.
+
+#### 8.7.9 Formats. OPEN
+
+**A.** OCSF only. **B.** OCSF and CEF of audit records. **C.** CEF of audit records only. The
+CEF code that exists today formats alerts only. In every option the OCSF version is the one the
+ACS file names, 1.9.0 at the commit above.
+
+#### 8.7.10 The command. Shape, with the detail OPEN
+
+```
+bawbel-gate audit export FILE --format ocsf [--output PATH]
+```
+
+It writes one JSON object per line, to PATH or to standard output. Whether `--format cef`
+exists is 8.7.9. A usage error exits 2. Whether the log is verified first is OPEN, options
+none chosen: **A.** verify first and refuse a log whose chain fails, with exit 1. **B.** Export,
+and say in the first line that verification was not run. **C.** An option decides.
+
+#### 8.7.11 What the implementation PR tests first
+
+Property tests are committed before the implementation (CONTRIBUTING.md, "Property test
+before implementation"). None is written here:
+
+- no output contains an argument payload or any key that holds one;
+- every `class_uid` in the output is named in the pinned ACS file;
+- the input file is byte-identical after a run, and the run opens no socket;
+- the same input gives the same bytes;
+- each exported event maps back to its record, where 8.7.7 carries the position;
+- an event with no ACS entry behaves as 8.7.5 says.
+
+#### 8.7.12 Implementation status
+
+Not implemented. The implementation is a separate PR after this section merges alone. 11.5
+gets the command when this section is accepted, and is not edited here.
+
 ## 9. AVE records: schema 1.3.0
 
 The gate targets AVE records at schema 1.3.0, published by the independent AVE project
