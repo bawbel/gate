@@ -5,8 +5,29 @@ date: 2026-11-25
 
 # 0003. Converge the audit chain with ACS ContextEntry, or keep the divergence (options)
 
-This is a draft that records options. It chooses none. [ADR 0001](./0001-audit-chain-construction.md)
+This is a draft that records options and, below, the maintainer's decision. [ADR 0001](./0001-audit-chain-construction.md)
 stands, and nothing in the gate changes: no audit format, hash rule, canonical form, pin or test.
+It stays a draft, with status `proposed`, until the maintainer has read it.
+
+## Decision
+
+**Decision: A, maintainer, 2026-11-25.** Keep the divergence. ADR 0001 stands.
+
+**Revisit when** ACS tags a release that ships the vector file, or when a user asks for ACS
+conformance, and when the Go question (does the reference ignore or reject an extra member) has
+been answered by running it.
+
+Recorded by the executor from the maintainer's written answer of 2026-11-25. The executor chose
+nothing here.
+
+- Go is not installed and the Go reference was not run. The maintainer's answer is not to install
+  it now.
+- The maintainer's reason against C1: it does not make `args_sha256` equal an ACS request hash.
+  The comparison table below agrees: its row "Chain could be recomputed by the ACS rule" reads
+  "no" for C1.
+- ADR 0001's own "Revisit when" text is not edited by this draft. Whether to copy the revisit
+  condition above into it is left to the maintainer.
+- Options B, C1 and C2 stay below as the record of what was weighed.
 
 ## Why this is open now
 
@@ -73,7 +94,8 @@ The first column is ADR 0001's table. "Stays" means the gate keeps today's behav
   `args_sha256` of a float-bearing argument differs from a hash of its RFC 8785 form (VERIFIED,
   1 of 3 calls).
 - **Costs.** No code. If chosen, ADR 0001's "Revisit when" should say what would change the
-  answer, since its stated condition has been met.
+  answer, since its stated condition has been met. The revisit condition is now stated in the
+  Decision section above.
 - **Open.** Whether to run `scripts/acs_check/` again when ACS publishes a new release.
 
 ## Option B. Converge under a new versioned audit format
@@ -151,7 +173,9 @@ gives no chain cross-verification.
 
 ## Not decided
 
-- Which option, or none of them. ADR 0001 remains the accepted decision.
+The points for B and C below matter only if the decision is revisited.
+
+- Which option: decided as A on 2026-11-25 (see Decision). ADR 0001 remains the accepted decision.
 - For B: the answer to the design point, the rule for a file that spans versions, the member names,
   and where the chain head is published.
 - For C: how a record says which rule produced `args_sha256`, and whether C2's effect on pins is
