@@ -35,7 +35,8 @@ NETWORK_MODULES = (
 EXPECTED = {
     "bawbel_gate/cli.py": {"urllib.request"},  # `enroll`: one outbound HTTP POST
     "bawbel_gate/console/server.py": {"http.server"},  # `serve --console`: a listener
-    "bawbel_gate/hub/server.py": {"http.server"},  # `hub serve`: a listener
+    # `hub serve`: a listener. `socket` only half-closes a connection after an early refusal.
+    "bawbel_gate/hub/server.py": {"http.server", "socket"},
     "bawbel_gate/mux/proxy.py": {"subprocess"},  # waits on and ends the upstream processes
     "bawbel_gate/mux/transport.py": {"subprocess"},  # starts the upstream MCP servers
     "bawbel_gate/ops/otel.py": {"opentelemetry"},  # the optional OTLP exporter (`ops` extra)

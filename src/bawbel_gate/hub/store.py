@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS audit_records (
     PRIMARY KEY (gate_id, session_id, seq)
 );
 
+CREATE INDEX IF NOT EXISTS idx_audit_records_hash ON audit_records (gate_id, hash);
+CREATE INDEX IF NOT EXISTS idx_audit_records_prev ON audit_records (gate_id, prev);
+
 CREATE TABLE IF NOT EXISTS chain_heads (
     gate_id    TEXT    NOT NULL,
     session_id TEXT    NOT NULL,
@@ -82,6 +85,10 @@ class FleetStore:
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
         self._lock = threading.Lock()
+        # Held by ingest around verify-then-store, so that two batches cannot both be checked
+        # against the same chain head (hub/ingest.py). Separate from _lock, which guards the
+        # connection inside each method.
+        self.ingest_lock = threading.Lock()
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_SCHEMA)
@@ -120,8 +127,9 @@ class FleetStore:
                         json.dumps(record),
                     ),
                 ).rowcount == 1
-                self._upsert_chain_head(gate_id, session_id, record, cursor=None)
+                # A row that was ignored as a duplicate must not move the head or a counter.
                 if inserted:
+                    self._upsert_chain_head(gate_id, session_id, record, cursor=None)
                     self._increment_session_state(gate_id, session_id, record)
 
             self._conn.execute(
@@ -212,6 +220,33 @@ class FleetStore:
         if not row:
             return None
         return dict(row)
+
+    def get_record(self, gate_id: str, session_id: str, seq: int) -> dict | None:
+        """The record held for (gate_id, session_id, seq), as it was stored, or None."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT record_json FROM audit_records WHERE gate_id=? AND session_id=? AND seq=?",
+                (gate_id, session_id, seq),
+            ).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def find_seq_by_hash(self, gate_id: str, record_hash: str) -> int | None:
+        """The seq of a record this gate holds with this hash, or None."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT seq FROM audit_records WHERE gate_id=? AND hash=? LIMIT 1",
+                (gate_id, record_hash),
+            ).fetchone()
+        return row[0] if row else None
+
+    def has_successor(self, gate_id: str, record_hash: str) -> bool:
+        """True if a record this gate holds names this hash as its prev."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT 1 FROM audit_records WHERE gate_id=? AND prev=? LIMIT 1",
+                (gate_id, record_hash),
+            ).fetchone()
+        return row is not None
 
     def get_chain_head(self, gate_id: str, session_id: str) -> dict | None:
         with self._lock:

@@ -637,7 +637,7 @@ code, not its dependencies, and not the upstream MCP servers.
 |---|---|
 | `bawbel-gate enroll --hub URL --token TOKEN` | One outbound HTTP POST to `URL/v1/enroll`, carrying the single-use token, with a 10 second timeout. The URL is the one you pass. This is the only outbound connection the gate's code makes. |
 | `bawbel-gate serve --console HOST:PORT` (or `BAWBEL_CONSOLE_ADDR`) | Opt-in. Listens for HTTP on HOST:PORT. The default address is `127.0.0.1:7317`. Without it, `serve` listens on nothing. |
-| `bawbel-gate hub serve` | Listens for HTTP. The default address is `127.0.0.1:8443`. |
+| `bawbel-gate hub serve` | Listens for HTTP. The default address is `127.0.0.1:8443`. One thread per connection. It reads a request body only up to `--max-body-bytes` (default 1 MiB) and within `--request-timeout` (default 10 seconds). It makes no outbound connection. |
 | every other command | No network use by the gate itself. |
 
 - **No telemetry.** The gate has no code that sends usage data, analytics, or crash reports.

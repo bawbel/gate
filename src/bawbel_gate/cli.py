@@ -13,6 +13,8 @@ from bawbel_gate._const import (
     CONSOLE_DEFAULT_PORT,
     HUB_DEFAULT_HOST,
     HUB_DEFAULT_PORT,
+    HUB_MAX_BODY_BYTES,
+    HUB_REQUEST_TIMEOUT_S,
     LINT_UNENFORCED_ISSUE,
     LINT_WARN_UNENFORCED,
 )
@@ -469,7 +471,19 @@ def hub_group() -> None:
     "--host", default=HUB_DEFAULT_HOST, show_default=True,
     envvar="BAWBEL_HUB_HOST", help="Host to bind. Env: BAWBEL_HUB_HOST.",
 )
-def hub_serve(db: Path, port: int, host: str) -> None:
+@click.option(
+    "--max-body-bytes", default=HUB_MAX_BODY_BYTES, show_default=True,
+    type=click.IntRange(min=1), envvar="BAWBEL_HUB_MAX_BODY_BYTES",
+    help="Largest request body the hub reads, in bytes. Env: BAWBEL_HUB_MAX_BODY_BYTES.",
+)
+@click.option(
+    "--request-timeout", "request_timeout_s", default=HUB_REQUEST_TIMEOUT_S, show_default=True,
+    type=click.FloatRange(min=0, min_open=True), envvar="BAWBEL_HUB_REQUEST_TIMEOUT_S",
+    help="Seconds a client may take to send a request body. Env: BAWBEL_HUB_REQUEST_TIMEOUT_S.",
+)
+def hub_serve(
+    db: Path, port: int, host: str, max_body_bytes: int, request_timeout_s: float
+) -> None:
     """Start the bawbel-hub ingest + fleet console server. See DESIGN.md 14."""
     from bawbel_gate.hub.store import FleetStore
     from bawbel_gate.hub.enroll import EnrollmentRegistry
@@ -477,7 +491,10 @@ def hub_serve(db: Path, port: int, host: str) -> None:
 
     store = FleetStore(str(db))
     enroll_reg = EnrollmentRegistry(str(db) if str(db) != ":memory:" else ":memory:")
-    server = HubServer(store=store, enroll=enroll_reg, host=host, port=port)
+    server = HubServer(
+        store=store, enroll=enroll_reg, host=host, port=port,
+        max_body_bytes=max_body_bytes, request_timeout_s=request_timeout_s,
+    )
     server.start_background()
     click.echo(f"hub: listening on http://{host}:{server.port}")
     click.echo(f"  admin token: {server.admin_token}")
