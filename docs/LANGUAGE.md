@@ -27,8 +27,9 @@ same PR that introduces it.
 | pin | recorded integrity hash (`tool_schema_integrity` etc.) | lock, freeze |
 | drift | pinned content changed after review | change, update, diff (alone) |
 | suspend | withhold a drifted server's tools | disable, ban, block (alone) |
-| stanza | `capability_mitigation.manifest_stanza` fragment from an AVE record | snippet, patch |
-| harden | merge a record's stanza into a manifest (`harden --ave`) | apply, patch, fix |
+| stanza | a `manifest_stanza` fragment in the gate's mitigations map, keyed by AVE ID, that merges into a manifest (DESIGN.md 9.1). It is not part of an AVE record | snippet, patch |
+| mitigations map | `mitigations/ave-mitigations.json`: the gate's own file of stanzas keyed by AVE ID (DESIGN.md 9.1) | AVE mitigations, PiranhaDB stanzas |
+| harden | merge the stanza that the mitigations map holds for an AVE ID into a manifest (`harden --ave`) | apply, patch, fix |
 | learning mode | observe-only recording that synthesizes draft manifests | dry run, shadow mode |
 | deny burst | > N denies/min from one session | attack, brute force (unproven claims) |
 
