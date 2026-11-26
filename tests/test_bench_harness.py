@@ -16,6 +16,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+LINUX = sys.platform.startswith("linux")
+needs_proc = pytest.mark.skipif(not LINUX, reason="the harness reads /proc")
 
 try:
     from bench import harness
@@ -23,6 +25,7 @@ except (
     ImportError
 ):  # pragma: no cover - before the harness exists, so the tests fail as "not built"
     harness = None
+
 
 def _h():
     assert harness is not None, "bench/harness.py is not built yet"
@@ -84,6 +87,7 @@ class TestSpecAndResult:
         lines = _h().render(result).splitlines()
         assert lines[0].startswith("machine:") and lines[1] == "seed: 7"
 
+    @needs_proc
     def test_process_stats_read_this_process(self):
         stats = _h().proc_stats(os.getpid())
         assert (
@@ -117,6 +121,7 @@ class TestScenarios:
         assert result["skipped"] and "OpenTelemetry" in result["skipped"]
 
 
+@needs_proc
 class TestSmoke:
     def test_a_short_single_session_run_works_end_to_end(self, tmp_path):
         env = dict(os.environ, PYTHONPATH=os.pathsep.join([str(ROOT), str(ROOT / "src")]))
