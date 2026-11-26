@@ -334,6 +334,9 @@ def _handle_tools_call(
         return decision.to_jsonrpc_error(request_id)
 
     start = time.monotonic()
+    # The taint the decision is made against. _forward_and_tag adds this call's own provenance
+    # class to the session, so the record and the span must not read the session after it.
+    taint_at_decision = sorted(ctx.session.tainted_by)
     decision = resolve(bare_tool, args, manifest, ctx.session)
     final_effect, final_reason, executed = decision.effect, decision.reason, False
 
@@ -357,9 +360,9 @@ def _handle_tools_call(
         ).to_jsonrpc_error(request_id)
 
     final_decision = SimpleNamespace(effect=final_effect, reason=final_reason, ave=decision.ave)
-    _audit_call(ctx, server, bare_tool, final_decision, args, manifest)
+    _audit_call(ctx, server, bare_tool, final_decision, args, manifest, taint=taint_at_decision)
     record_decision_span(
-        bare_tool, server, final_decision, list(ctx.session.tainted_by),
+        bare_tool, server, final_decision, list(taint_at_decision),
         (time.monotonic() - start) * 1000,
     )
     return response
@@ -411,9 +414,13 @@ def _dispatch_learn(message: dict, ctx: _ProxyContext, recorder: LearnRecorder) 
         except ValueError:
             return _method_not_found(request_id, "tools/call")
         recorder.record_call(server, bare_tool, args)
+        taint_at_decision = sorted(ctx.session.tainted_by)
         response = _forward_and_tag(request_id, server, bare_tool, args, ctx)
         decision = SimpleNamespace(effect=EFFECT_ALLOW, reason="resolved", ave=[])
-        _audit_call(ctx, server, bare_tool, decision, args, ctx.manifests.get(server))
+        _audit_call(
+            ctx, server, bare_tool, decision, args, ctx.manifests.get(server),
+            taint=taint_at_decision,
+        )
         return response
     return _method_not_found(request_id, method)
 
@@ -441,7 +448,15 @@ def _method_not_found(request_id, method: str) -> dict:
     }
 
 
-def _audit_call(ctx: _ProxyContext, server: str, tool: str, decision, args: dict, manifest) -> None:
+def _audit_call(
+    ctx: _ProxyContext, server: str, tool: str, decision, args: dict, manifest,
+    taint: list[str] | None = None,
+) -> None:
+    """Write the CALL_DECIDED record. `taint` is the taint the decision was made against.
+
+    A call that is not forwarded changes no taint, so those callers leave it out and the
+    session's current taint is read.
+    """
     ctx.writer.append({
         "ts": _now_iso(),
         "session": ctx.session.session_id,
@@ -450,7 +465,7 @@ def _audit_call(ctx: _ProxyContext, server: str, tool: str, decision, args: dict
         "tool": tool,
         "effect": decision.effect,
         "reason": decision.reason,
-        "taint": sorted(ctx.session.tainted_by),
+        "taint": sorted(ctx.session.tainted_by) if taint is None else list(taint),
         "args_sha256": _hash_args(args),
         "manifest_sha256": manifest.manifest_sha256 if manifest else None,
         "ave": list(decision.ave),
