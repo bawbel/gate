@@ -1,0 +1,258 @@
+{
+  "format": "bawbel-hub-ingest-vectors/v1",
+  "group": "limits",
+  "vectors": [
+    {
+      "id": "limits-body-exactly-at-the-cap-is-accepted",
+      "description": "A body of exactly the cap is read. Padding is blank lines, which are skipped.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          },
+          "pad_to": {
+            "relative_to": "max_body_bytes",
+            "offset": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "limits-body-one-byte-over-the-cap-is-refused",
+      "description": "A body over the cap is answered with 413 before it is read.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 413,
+            "json": {
+              "error": "too_large"
+            }
+          },
+          "pad_to": {
+            "relative_to": "max_body_bytes",
+            "offset": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "limits-content-length-is-not-a-number",
+      "description": "A Content-Length that is not a plain number is refused.",
+      "steps": [
+        {
+          "raw": {
+            "send": [
+              "POST /v1/gates/{gate}/records HTTP/1.1",
+              "Host: hub",
+              "Authorization: Bearer {token}",
+              "Content-Length: abc"
+            ]
+          },
+          "expect": {
+            "status": 400,
+            "json": {
+              "error": "bad_content_length"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "limits-content-length-is-negative",
+      "description": "A negative Content-Length is refused.",
+      "steps": [
+        {
+          "raw": {
+            "send": [
+              "POST /v1/gates/{gate}/records HTTP/1.1",
+              "Host: hub",
+              "Authorization: Bearer {token}",
+              "Content-Length: -1"
+            ]
+          },
+          "expect": {
+            "status": 400,
+            "json": {
+              "error": "bad_content_length"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "limits-chunked-body-is-refused",
+      "description": "A chunked body is not accepted: send a Content-Length.",
+      "steps": [
+        {
+          "raw": {
+            "send": [
+              "POST /v1/gates/{gate}/records HTTP/1.1",
+              "Host: hub",
+              "Authorization: Bearer {token}",
+              "Transfer-Encoding: chunked"
+            ],
+            "body": "0\r\n\r\n"
+          },
+          "expect": {
+            "status": 411,
+            "json": {
+              "error": "length_required"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "limits-body-ends-early",
+      "description": "The client promises 100 bytes, sends 5 and closes its side.",
+      "steps": [
+        {
+          "raw": {
+            "send": [
+              "POST /v1/gates/{gate}/records HTTP/1.1",
+              "Host: hub",
+              "Authorization: Bearer {token}",
+              "Content-Length: 100"
+            ],
+            "body": "xxxxx",
+            "half_close": true
+          },
+          "expect": {
+            "status": 400,
+            "json": {
+              "error": "incomplete_body"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "limits-client-that-sends-no-body-times-out",
+      "description": "The client promises 100 bytes and sends none, and keeps the connection open: 408 at the deadline.",
+      "steps": [
+        {
+          "slow": true,
+          "raw": {
+            "send": [
+              "POST /v1/gates/{gate}/records HTTP/1.1",
+              "Host: hub",
+              "Authorization: Bearer {token}",
+              "Content-Length: 100"
+            ]
+          },
+          "expect": {
+            "status": 408,
+            "json": {
+              "error": "request_timeout"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,540 @@
+{
+  "format": "bawbel-hub-ingest-vectors/v1",
+  "group": "schema",
+  "vectors": [
+    {
+      "id": "schema-record-is-not-an-object",
+      "description": "A JSON line that is not an object is refused with its index.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            "[1,2]"
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 1,
+              "reason": "not_object"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-session-is-not-a-string",
+      "description": "session must be a string.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": 7,
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "session"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-session-is-empty",
+      "description": "session must not be empty.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "session"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-seq-is-a-string",
+      "description": "seq must be an integer.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": "1",
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "seq"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-seq-is-a-float",
+      "description": "seq must be an integer.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1.5,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "seq"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-seq-is-a-boolean",
+      "description": "seq must not be a boolean.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": true,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "seq"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-seq-is-zero",
+      "description": "seq starts at 1.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 0,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "seq"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-seq-is-negative",
+      "description": "seq starts at 1.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": -1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "seq"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-seq-is-above-int64",
+      "description": "seq is at most 2^63 - 1.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 9223372036854775808,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "seq"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-hash-is-missing",
+      "description": "hash is required.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "hash"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-hash-is-empty",
+      "description": "hash must not be empty.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": ""
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "hash"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-prev-is-missing",
+      "description": "A record with a hash and no prev is refused, whatever its seq. It was once stored and moved the head.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1000000,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 0,
+              "reason": "prev"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-line-is-not-json",
+      "description": "A line that is not JSON refuses the batch.",
+      "steps": [
+        {
+          "lines": [
+            "{not json"
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "invalid NDJSON"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-one-bad-record-refuses-the-whole-batch",
+      "description": "Nothing is stored from a batch that has a bad record: its good records are refused later as not first.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": 7,
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            }
+          ],
+          "expect": {
+            "status": 422,
+            "json": {
+              "error": "schema",
+              "index": 2,
+              "reason": "session"
+            }
+          }
+        },
+        {
+          "lines": [
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 409,
+            "json": {
+              "error": "chain_mismatch",
+              "reason": "prev",
+              "session": "s1"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

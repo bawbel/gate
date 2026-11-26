@@ -25,6 +25,16 @@ itemized here; this file picks up from that baseline.
   with an error is suspended: its tools are not listed and calls to it are denied. A
   server built on the official MCP Python SDK now lists its tools through the gate
   (tested with mcp 1.30.0 and 2.3.0).
+- The Hub refuses what it cannot place (#219). A record without a `prev`, or with a `seq` or
+  `session` of the wrong type, gets 422 and is no longer stored. A record that rewrites a held
+  `(gate, session, seq)`, skips a `seq`, or does not link to the held chain gets 409 with a
+  `reason` and the `expected_seq`, and nothing from the batch is stored. A `SESSION_START` that
+  continues the chain of a held record of the same gate is accepted as a restart. A body over
+  `--max-body-bytes` (default 1 MiB) gets 413, a malformed `Content-Length` gets 400, and a
+  client that stalls is cut off after `--request-timeout` (default 10 s) without blocking other
+  clients. Migration: a gate that shipped a rewritten history, or a record the Hub stored
+  without a `prev`, now gets an error where it used to get 200. Rows already stored are not
+  changed.
 
 ## [0.1.1] - 2026-10-12
 

@@ -1,0 +1,1211 @@
+{
+  "format": "bawbel-hub-ingest-vectors/v1",
+  "group": "valid",
+  "vectors": [
+    {
+      "id": "valid-single-session",
+      "description": "Three records of one session from genesis are accepted.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-empty-body",
+      "description": "An empty batch is accepted and acks nothing.",
+      "steps": [
+        {
+          "lines": [],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-blank-lines-are-ignored",
+      "description": "Blank and whitespace-only lines between records are skipped.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            "",
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            "   ",
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-two-run-file-in-one-batch",
+      "description": "A file written by two serve runs (one chain, two sessions, seq continuing) is accepted.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "SESSION_START",
+              "manifest_hashes": {
+                "github": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:492541065879a1ba58e70dad8bc35502c31c35b858dbc7506efd219119a11fef"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:492541065879a1ba58e70dad8bc35502c31c35b858dbc7506efd219119a11fef",
+              "hash": "sha256:e0aaa7b7112a5697b80881305b90a58863e5b94d0396b059a2713e330ed3164b"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:e0aaa7b7112a5697b80881305b90a58863e5b94d0396b059a2713e330ed3164b",
+              "hash": "sha256:d7acb714c5b44ae12ee70225f207e513670c59ab68a63d3820db8507ea597354"
+            },
+            {
+              "seq": 4,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s2",
+              "event": "SESSION_START",
+              "manifest_hashes": {
+                "github": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "prev": "sha256:d7acb714c5b44ae12ee70225f207e513670c59ab68a63d3820db8507ea597354",
+              "hash": "sha256:38230128934df6b05fd8242782b75b9b9cc59234c9adf30559c8fa53bd5896d4"
+            },
+            {
+              "seq": 5,
+              "ts": "2026-11-26T00:00:04.000Z",
+              "session": "s2",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "deny",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:38230128934df6b05fd8242782b75b9b9cc59234c9adf30559c8fa53bd5896d4",
+              "hash": "sha256:40573883655605047a7ba418c8bafbcf5a08417897fe2fdd2c29cb55447adbfe"
+            },
+            {
+              "seq": 6,
+              "ts": "2026-11-26T00:00:05.000Z",
+              "session": "s2",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "deny",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:40573883655605047a7ba418c8bafbcf5a08417897fe2fdd2c29cb55447adbfe",
+              "hash": "sha256:8eabb6447e2aec46e47ac65e3c1e9044b55489e567504c260750c1c57f469982"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3,
+                "s2": 6
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-two-run-file-in-two-batches",
+      "description": "The second run's SESSION_START restarts from the first run's last record.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "SESSION_START",
+              "manifest_hashes": {
+                "github": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:492541065879a1ba58e70dad8bc35502c31c35b858dbc7506efd219119a11fef"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:492541065879a1ba58e70dad8bc35502c31c35b858dbc7506efd219119a11fef",
+              "hash": "sha256:e0aaa7b7112a5697b80881305b90a58863e5b94d0396b059a2713e330ed3164b"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:e0aaa7b7112a5697b80881305b90a58863e5b94d0396b059a2713e330ed3164b",
+              "hash": "sha256:d7acb714c5b44ae12ee70225f207e513670c59ab68a63d3820db8507ea597354"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        },
+        {
+          "lines": [
+            {
+              "seq": 4,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s2",
+              "event": "SESSION_START",
+              "manifest_hashes": {
+                "github": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "prev": "sha256:d7acb714c5b44ae12ee70225f207e513670c59ab68a63d3820db8507ea597354",
+              "hash": "sha256:38230128934df6b05fd8242782b75b9b9cc59234c9adf30559c8fa53bd5896d4"
+            },
+            {
+              "seq": 5,
+              "ts": "2026-11-26T00:00:04.000Z",
+              "session": "s2",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "deny",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:38230128934df6b05fd8242782b75b9b9cc59234c9adf30559c8fa53bd5896d4",
+              "hash": "sha256:40573883655605047a7ba418c8bafbcf5a08417897fe2fdd2c29cb55447adbfe"
+            },
+            {
+              "seq": 6,
+              "ts": "2026-11-26T00:00:05.000Z",
+              "session": "s2",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "deny",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:40573883655605047a7ba418c8bafbcf5a08417897fe2fdd2c29cb55447adbfe",
+              "hash": "sha256:8eabb6447e2aec46e47ac65e3c1e9044b55489e567504c260750c1c57f469982"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s2": 6
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-two-run-file-sessions-listed-in-reverse",
+      "description": "Sessions are checked in the order of their first seq, whatever order the batch lists them in.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 4,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s2",
+              "event": "SESSION_START",
+              "manifest_hashes": {
+                "github": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "prev": "sha256:d7acb714c5b44ae12ee70225f207e513670c59ab68a63d3820db8507ea597354",
+              "hash": "sha256:38230128934df6b05fd8242782b75b9b9cc59234c9adf30559c8fa53bd5896d4"
+            },
+            {
+              "seq": 5,
+              "ts": "2026-11-26T00:00:04.000Z",
+              "session": "s2",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "deny",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:38230128934df6b05fd8242782b75b9b9cc59234c9adf30559c8fa53bd5896d4",
+              "hash": "sha256:40573883655605047a7ba418c8bafbcf5a08417897fe2fdd2c29cb55447adbfe"
+            },
+            {
+              "seq": 6,
+              "ts": "2026-11-26T00:00:05.000Z",
+              "session": "s2",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "deny",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:40573883655605047a7ba418c8bafbcf5a08417897fe2fdd2c29cb55447adbfe",
+              "hash": "sha256:8eabb6447e2aec46e47ac65e3c1e9044b55489e567504c260750c1c57f469982"
+            },
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "SESSION_START",
+              "manifest_hashes": {
+                "github": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:492541065879a1ba58e70dad8bc35502c31c35b858dbc7506efd219119a11fef"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:492541065879a1ba58e70dad8bc35502c31c35b858dbc7506efd219119a11fef",
+              "hash": "sha256:e0aaa7b7112a5697b80881305b90a58863e5b94d0396b059a2713e330ed3164b"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:e0aaa7b7112a5697b80881305b90a58863e5b94d0396b059a2713e330ed3164b",
+              "hash": "sha256:d7acb714c5b44ae12ee70225f207e513670c59ab68a63d3820db8507ea597354"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3,
+                "s2": 6
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-next-batch-continues-the-session",
+      "description": "The next records of a held session are accepted.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        },
+        {
+          "lines": [
+            {
+              "seq": 4,
+              "ts": "2026-11-26T00:00:03.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8",
+              "hash": "sha256:40db91c32e6d539152f34750cf227c59a813717a28a47e93db68db28fac794a1"
+            },
+            {
+              "seq": 5,
+              "ts": "2026-11-26T00:00:04.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:40db91c32e6d539152f34750cf227c59a813717a28a47e93db68db28fac794a1",
+              "hash": "sha256:d0fb179d7f632137bc70b04e48adfa249ef3fa375fa2a884d3c0cf257200b203"
+            },
+            {
+              "seq": 6,
+              "ts": "2026-11-26T00:00:05.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:d0fb179d7f632137bc70b04e48adfa249ef3fa375fa2a884d3c0cf257200b203",
+              "hash": "sha256:350ed6a2547c528031711ece3310a93e078e66de94e103a8e29279f09cf41e68"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 6
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-replay-is-idempotent",
+      "description": "Records the Hub holds, resent unchanged, are accepted.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        },
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-replay-of-a-prefix-acks-the-prefix-only",
+      "description": "Resending records 1 to 3 of a session held to 6 is acked to 3, not to the Hub's head.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            },
+            {
+              "seq": 4,
+              "ts": "2026-11-26T00:00:03.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8",
+              "hash": "sha256:40db91c32e6d539152f34750cf227c59a813717a28a47e93db68db28fac794a1"
+            },
+            {
+              "seq": 5,
+              "ts": "2026-11-26T00:00:04.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:40db91c32e6d539152f34750cf227c59a813717a28a47e93db68db28fac794a1",
+              "hash": "sha256:d0fb179d7f632137bc70b04e48adfa249ef3fa375fa2a884d3c0cf257200b203"
+            },
+            {
+              "seq": 6,
+              "ts": "2026-11-26T00:00:05.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:d0fb179d7f632137bc70b04e48adfa249ef3fa375fa2a884d3c0cf257200b203",
+              "hash": "sha256:350ed6a2547c528031711ece3310a93e078e66de94e103a8e29279f09cf41e68"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 6
+              }
+            }
+          }
+        },
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-duplicate-record-inside-one-batch",
+      "description": "A record repeated inside one batch is accepted once.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-rotated-chain-is-a-new-session",
+      "description": "A new chain from the genesis value under a new session id is accepted next to an old one.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          }
+        },
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s9",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:30ffb4ca0e231c274d08040f322784a7b22f9d46410629062a72eb7054f24050"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s9",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:30ffb4ca0e231c274d08040f322784a7b22f9d46410629062a72eb7054f24050",
+              "hash": "sha256:cc5e30ed96ad6c6ac78d7d063c36155d2d98f60ef8e1a82f39a53c9e399fe8d6"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s9": 2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valid-same-session-id-on-two-gates",
+      "description": "State is kept per gate: two gates may use one session id.",
+      "steps": [
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          },
+          "gate": "a"
+        },
+        {
+          "lines": [
+            {
+              "seq": 1,
+              "ts": "2026-11-26T00:00:00.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "hash": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7"
+            },
+            {
+              "seq": 2,
+              "ts": "2026-11-26T00:00:01.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:28ba503a6af762624908e677651fd66bdd06020564f088f51c13fdd5eac720e7",
+              "hash": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23"
+            },
+            {
+              "seq": 3,
+              "ts": "2026-11-26T00:00:02.000Z",
+              "session": "s1",
+              "event": "CALL_DECIDED",
+              "server": "github",
+              "tool": "get_issue",
+              "effect": "allow",
+              "reason": "resolved",
+              "taint": [],
+              "args_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "manifest_sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "ave": [],
+              "prev": "sha256:509bd354d2aa1c29b39f593e3fe26d5468539c0e92a6ebc9cd333e753b529a23",
+              "hash": "sha256:effa04b8f1c5e5d4446629d6102588e26f164133180f4342944abfec27084aa8"
+            }
+          ],
+          "expect": {
+            "status": 200,
+            "json": {
+              "acked": {
+                "s1": 3
+              }
+            }
+          },
+          "gate": "b"
+        }
+      ]
+    }
+  ]
+}
