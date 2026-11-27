@@ -82,14 +82,24 @@ scene "5. The audit chain"
 show $GATE audit verify gate.audit.jsonl
 show python3 driver.py events gate.audit.jsonl
 
-scene "What this demo does not show"
+scene "What this demo showed"
+cat <<'TEXT'
+- The scanner reading the stub servers' tool list before anything runs.
+- Four calls through the gate under a manifest that allows one tool, each one recorded.
+- A tool description changing after call 3: the gate's second tools/list still shows the text it
+  took at session start, call 4 goes through, and no DRIFT_DETECTED record is written.
+- The outbox tool allowed on its own, then stopped with approval_denied after private data and
+  untrusted text, and nothing written to sink.txt.
+- audit verify passing over the log of all three sessions.
+TEXT
+pause
+
+scene "Limits of this demo"
 cat <<'TEXT'
 - A real MCP client or a real MCP server. The driver and the stubs are scripts.
 - A person answering the approval prompt. Under an MCP client it resolves to deny.
-- Calls that never reach the gate: a host talking to a server directly, A2A, gRPC, REST,
-  message brokers, and model traffic. The gate sees MCP calls routed through it, and no more.
-- Any check of tool descriptions after the session started. The gate made none in scene 3.
-- Tool-schema pinning. This demo does not pin.
+- Calls that never reach the gate: a host talking to a server directly, A2A, gRPC, REST, message
+  brokers, and model traffic. The gate sees MCP calls routed through it, and no more.
 - A log that was cut at the end, or rewritten with every later hash recomputed: audit verify
   passes both (README, "Verifying a log you did not write").
 - Windows, or any machine other than the one this ran on.

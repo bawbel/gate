@@ -1,6 +1,6 @@
 """Tests for examples/demo: the driver, the stub MCP server, and the demo through the real gate.
 
-Written before the driver and the stub. They pin what the demo claims, so a change in the
+Written before the driver and the stub. They fix what the demo claims, so a change in the
 gate's behaviour (for example, detecting a description change during a session) fails here and
 the demo text has to be updated with it. No network is used.
 """

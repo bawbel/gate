@@ -45,8 +45,8 @@ Read from the code and DESIGN.md before the demo was built (`develop` at `d5c791
 **It does nothing.** It does not deny the call and it does not flag it. In detail:
 
 1. **The check runs once, at session start.** `_check_drift` is called from one place, `_bootstrap`
-   (`src/bawbel_gate/mux/proxy.py:152-153`), and only when the manifest has a stored pin. The session lifecycle in DESIGN.md
-   (lines 567-585) has one `VERIFY` step, before `ACTIVE`. Nothing returns to it.
+   (`src/bawbel_gate/mux/proxy.py:152-153`). The session lifecycle in DESIGN.md (lines 567-585) has one `VERIFY` step, before
+   `ACTIVE`. Nothing returns to it.
 2. **`tools/list` is answered from the list taken at session start.** `_dispatch_enforce` returns `ctx.merged_tools`
    (`proxy.py:307`), which `_bootstrap` built once. The host keeps seeing the old text.
 3. **The upstream's `notifications/tools/list_changed` is dropped,** not forwarded (`proxy.py:271`).
@@ -56,24 +56,31 @@ Read from the code and DESIGN.md before the demo was built (`develop` at `d5c791
 
 What that means: the gate does not catch a description that changes after the session has started. The host's `tools/list`
 stays on the old text, and nothing records that the server's text changed. A host that connects straight to the server sees the
-new text, which scene 3 also shows. At the next session
-start the gate compares the server's list with a stored pin, if the manifest has one (`proxy.py:152`). This demo uses no pin
-and does not show that comparison.
+new text, which scene 3 also shows.
 
-`tests/test_demo_driver.py` pins this behaviour. If the gate starts to notice a change during a session, that test fails and
-this section and scene 3 need to change with it.
+`tests/test_demo_driver.py` checks this behaviour, and `tests/test_demo_text.py` checks the lines of `proxy.py` cited above. If
+the gate starts to notice a change during a session, or those lines move, a test fails and this section and scene 3 need to
+change with it.
 
-## What this demo does not show
+## What this demo showed
 
-- A real MCP client or a real MCP server.
-- A person answering the approval prompt.
+- The scanner reading the stub servers' tool list before anything runs.
+- Four calls through the gate under a manifest that allows one tool, each one recorded.
+- A tool description changing after call 3: the gate's second tools/list still shows the text it took at session start, call
+  4 goes through, and no DRIFT_DETECTED record is written.
+- The outbox tool allowed on its own, then stopped with approval_denied after private data and untrusted text, and nothing
+  written to sink.txt.
+- audit verify passing over the log of all three sessions.
+
+## Limits of this demo
+
+- A real MCP client or a real MCP server. The driver and the stubs are scripts.
+- A person answering the approval prompt. Under an MCP client it resolves to deny.
 - Calls that never reach the gate: a host talking to a server directly, A2A, gRPC, REST, message brokers, and model traffic.
   The gate sees MCP calls routed through it, and no more.
-- Any check of tool descriptions after the session started.
-- Tool-schema pinning. The demo does not pin.
-- A log cut at the end, or rewritten with every later hash recomputed: `audit verify` passes both (see "Verifying a log you
-  did not write" in the main README).
-- Windows, or any machine other than the one the demo was run on.
+- A log that was cut at the end, or rewritten with every later hash recomputed: audit verify passes both (README, "Verifying
+  a log you did not write").
+- Windows, or any machine other than the one this ran on.
 
 ## Files
 

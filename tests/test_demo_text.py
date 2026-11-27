@@ -86,7 +86,7 @@ def test_the_readme_section_on_a_changed_description_cites_lines_that_say_what_i
         found = " ".join(lines[first - 1:last])
         assert token in found, f"proxy.py:{first}-{last} no longer has {token}"
     numbered = re.findall(r"^\d+\. \*\*", section, flags=re.MULTILINE)
-    assert len(numbered) == 5, "five points: session start, tools/list, notification, calls, records"
+    assert len(numbered) == 5, "five points: start, tools/list, notification, calls, records"
     assert "**It does nothing.**" in section
 
 
