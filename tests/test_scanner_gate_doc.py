@@ -84,3 +84,20 @@ def test_the_gate_commands_in_the_document_give_the_documented_result(tmp_path):
                               capture_output=True, text=True, timeout=60)
     assert verified.returncode == 0, verified.stdout + verified.stderr
     assert verified.stdout.startswith("ok: 4 records, chain intact")
+
+
+# The commands the document shows, by what each starts with. Each is run, by a test in this file or
+# by the run that produced the document, and its output is the one pasted under it.
+SHOWN_COMMANDS = ("bawbel scan ", "sed ", "printf ", "bawbel-gate audit verify ")
+
+
+def test_every_command_the_document_shows_is_one_it_runs():
+    shown, inside = [], False
+    for line in DOC.read_text(encoding="utf-8").splitlines():
+        if line.startswith("```"):
+            inside = not inside
+        elif inside and line.startswith("$ "):
+            shown.append(line[2:])
+    assert shown, "the document shows no commands"
+    unexpected = [c for c in shown if not c.startswith(SHOWN_COMMANDS)]
+    assert not unexpected, f"commands the tests do not run: {unexpected}"
