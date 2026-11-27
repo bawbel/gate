@@ -16,19 +16,25 @@ from __future__ import annotations
 import http.server
 import json
 import re
+import socket
 import threading
+import time
 from dataclasses import asdict
 from typing import Any
 
 from bawbel_gate._const import (
     HUB_DEFAULT_HOST,
     HUB_DEFAULT_PORT,
+    HUB_LINGER_MAX_BYTES,
+    HUB_LINGER_S,
+    HUB_MAX_BODY_BYTES,
+    HUB_REQUEST_TIMEOUT_S,
     HTTP_SERVER_POLL_S,
     HTTP_SHUTDOWN_TIMEOUT_S,
 )
 from bawbel_gate.hub.enroll import EnrollmentRegistry, EnrollmentError
 from bawbel_gate.hub.fleet import compute_fleet_posture
-from bawbel_gate.hub.ingest import process_batch, ChainMismatch
+from bawbel_gate.hub.ingest import process_batch, ChainMismatch, IngestSchemaError
 from bawbel_gate.hub.store import FleetStore
 
 _RE_GATE_RECORDS = re.compile(r"^/v1/gates/([^/]+)/records$")
@@ -57,10 +63,17 @@ setInterval(load, 5000);
 """
 
 
+_READ_CHUNK = 65536
+
+
 class _HubHandler(http.server.BaseHTTPRequestHandler):
     hub_store:   FleetStore
     hub_enroll:  EnrollmentRegistry
     admin_token: str
+    max_body_bytes: int = HUB_MAX_BODY_BYTES
+    # Socket timeout for each read while the request line and headers arrive
+    # (socketserver.StreamRequestHandler.timeout). The body has its own total deadline.
+    timeout = HUB_REQUEST_TIMEOUT_S
 
     def log_message(self, fmt: str, *args: Any) -> None:
         pass
@@ -75,6 +88,69 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
 
     def _error(self, code: int, msg: str) -> None:
         self._json(code, {"error": msg})
+
+    def _refuse(self, code: int, msg: str, **extra: Any) -> None:
+        """Answer an early refusal, before the body was read, and close the connection.
+
+        Closing with unread request bytes makes the kernel reset the connection, and the client
+        may lose the answer. So stop sending, then read and drop what it still sends for a
+        short, bounded while.
+        """
+        self.close_connection = True
+        try:
+            self._json(code, {"error": msg, **extra})
+            self.connection.shutdown(socket.SHUT_WR)
+            deadline = time.monotonic() + HUB_LINGER_S
+            dropped = 0
+            while dropped < HUB_LINGER_MAX_BYTES and time.monotonic() < deadline:
+                self.connection.settimeout(max(deadline - time.monotonic(), 0.01))
+                chunk = self.connection.recv(_READ_CHUNK)
+                if not chunk:
+                    break
+                dropped += len(chunk)
+        except OSError:
+            pass
+
+    def _read_body(self) -> bytes | None:
+        """Read the request body within the size cap and a total deadline.
+
+        Returns None when it has already answered (411, 400, 413, 408). It never reads more than
+        `max_body_bytes`, and an oversize Content-Length is refused before any of the body is read.
+        """
+        if self.headers.get("Transfer-Encoding") is not None:
+            self._refuse(411, "length_required")
+            return None
+        raw = self.headers.get("Content-Length")
+        if raw is None:
+            return b""
+        if not (raw.isascii() and raw.isdigit()):
+            self._refuse(400, "bad_content_length")
+            return None
+        length = int(raw)
+        if length > self.max_body_bytes:
+            self._refuse(413, "too_large", max_bytes=self.max_body_bytes)
+            return None
+
+        deadline = time.monotonic() + self.timeout
+        chunks: list[bytes] = []
+        remaining = length
+        while remaining:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                self._refuse(408, "request_timeout")
+                return None
+            try:
+                self.connection.settimeout(left)
+                chunk = self.rfile.read1(min(remaining, _READ_CHUNK))
+            except OSError:  # includes the socket timeout
+                self._refuse(408, "request_timeout")
+                return None
+            if not chunk:
+                self._refuse(400, "incomplete_body")
+                return None
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        return b"".join(chunks)
 
     def _auth(self) -> bool:
         auth = self.headers.get("Authorization", "")
@@ -124,10 +200,11 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
         # the single-use enrollment token itself is the credential (DESIGN.md 14.3).
         # consume_token() rejects invalid/reused tokens with EnrollmentError -> 403.
         if path == "/v1/enroll":
-            length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length) if length else b"{}"
+            body = self._read_body()
+            if body is None:
+                return
             try:
-                payload = json.loads(body)
+                payload = json.loads(body or b"{}")
             except json.JSONDecodeError:
                 self._error(400, "invalid JSON")
                 return
@@ -147,8 +224,9 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
         m = _RE_GATE_RECORDS.match(path)
         if m:
             gate_id = m.group(1)
-            length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length) if length else b""
+            body = self._read_body()
+            if body is None:
+                return
             records = []
             for line in body.decode(errors="replace").splitlines():
                 line = line.strip()
@@ -162,11 +240,16 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
 
             try:
                 result = process_batch(gate_id, records, self.hub_store)
+            except IngestSchemaError as exc:
+                self._json(422, {"error": "schema", "index": exc.index, "reason": exc.reason})
+                return
             except ChainMismatch as exc:
                 self._json(409, {
                     "error":         "chain_mismatch",
+                    "reason":        exc.reason,
                     "session":       exc.session_id,
                     "expected_prev": exc.expected_prev,
+                    "expected_seq":  exc.expected_seq,
                 })
                 return
             self._json(200, {"acked": result.acked})
@@ -187,7 +270,11 @@ class _HubHandler(http.server.BaseHTTPRequestHandler):
 
 
 class HubServer:
-    """Wraps HTTPServer to serve the hub API on a background thread."""
+    """Wraps ThreadingHTTPServer to serve the hub API on a background thread.
+
+    One thread per connection, so a client that stalls holds its own thread and no one else's.
+    Ingest serialises verify-then-store under FleetStore.ingest_lock (hub/ingest.py).
+    """
 
     def __init__(
         self,
@@ -195,18 +282,31 @@ class HubServer:
         enroll: EnrollmentRegistry,
         host: str = HUB_DEFAULT_HOST,
         port: int = HUB_DEFAULT_PORT,
+        *,
+        max_body_bytes: int = HUB_MAX_BODY_BYTES,
+        request_timeout_s: float = HUB_REQUEST_TIMEOUT_S,
     ) -> None:
+        if type(max_body_bytes) is not int or max_body_bytes < 1:
+            raise ValueError("max_body_bytes must be a positive integer")
+        if not isinstance(request_timeout_s, (int, float)) or isinstance(request_timeout_s, bool) \
+                or request_timeout_s <= 0:
+            raise ValueError("request_timeout_s must be a positive number")
         self._store = store
         self._enroll = enroll
         admin_token = enroll.mint_admin_token()
 
-        self._httpd = http.server.HTTPServer((host, port), _HubHandler)
+        # One handler class per server: the settings are class attributes, so two servers in one
+        # process must not share a class.
+        handler_cls = type("_BoundHubHandler", (_HubHandler,), {
+            "hub_store": store,
+            "hub_enroll": enroll,
+            "admin_token": admin_token,
+            "max_body_bytes": max_body_bytes,
+            "timeout": float(request_timeout_s),
+        })
+        self._httpd = http.server.ThreadingHTTPServer((host, port), handler_cls)
+        self._httpd.daemon_threads = True
         self._httpd.timeout = HTTP_SERVER_POLL_S
-
-        handler_cls = self._httpd.RequestHandlerClass
-        handler_cls.hub_store = store
-        handler_cls.hub_enroll = enroll
-        handler_cls.admin_token = admin_token
 
         self._admin_token = admin_token
         self._thread: threading.Thread | None = None
@@ -227,5 +327,6 @@ class HubServer:
 
     def stop(self) -> None:
         self._httpd.shutdown()
+        self._httpd.server_close()
         if self._thread:
             self._thread.join(timeout=HTTP_SHUTDOWN_TIMEOUT_S)

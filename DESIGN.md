@@ -614,6 +614,13 @@ Events, exhaustively:
 | `SESSION_CLEAR` | operator CLI | reset taint, audit |
 | `SESSION_END` | transport close | final audit record, chain head printed |
 
+These are the events of the state machine. The gate writes five of them as audit records
+(8.6): `SESSION_START`, `DRIFT_DETECTED`, `SESSION_CLEAR` and `SESSION_END`, and a
+`CALL_DECIDED` record for each `tools/call` (the decision, not a separate event above). The
+other names, `TOOL_LIST`, `CALL_RECEIVED`, `RESPONSE_RECEIVED`, `APPROVAL_GRANTED`,
+`APPROVAL_DENIED` and `APPROVAL_TIMEOUT`, are defined in `_const.py` and are not written
+anywhere.
+
 Rejected calls return a JSON-RPC error with a structured, non-negotiable message:
 `{"code": -32031, "message": "bawbel-gate: denied", "data": {"reason": "...", "ave": [...]}}`.
 The `data.ave` field lists AVE IDs whose mitigation stanza produced the blocking rule,
@@ -654,8 +661,10 @@ Mechanisms that keep approvals rare and meaningful:
 
 - Approvals fire only on trifecta third-leg and explicitly `approve`-granted tools.
   Ordinary denies are silent to the human (logged, returned to the model as errors).
-- Approval prompts show: tool, full arguments (secret-redacted), which taint classes
-  and which rule caused the downgrade, and the AVE IDs behind the rule. One keystroke.
+- Approval prompts show: tool, full arguments (secret-redacted), which taint classes,
+  the reason code for the downgrade, and the AVE IDs behind it. One keystroke. (The prompt
+  does not show a rule id: `Decision.rule_ids` exists and nothing fills it. Showing the
+  rule is not built.)
 - Duplicate-call collapsing: an identical call (same tool, same canonical args) within
   the same task scope reuses the prior grant for `approve`-level effects.
 
@@ -715,7 +724,8 @@ operational feed. The gate additionally emits:
 
 - **OpenTelemetry**: one span per decision pipeline traversal
   (`bawbel.gate.decision`), attributes: server, tool, effect, reason, taint classes,
-  rule id, AVE ids, latency. OTLP/gRPC exporter, standard env config
+  AVE ids, latency. A rule id is not emitted: `Decision.rule_ids` exists and nothing fills
+  it. OTLP/gRPC exporter, standard env config
   (`OTEL_EXPORTER_OTLP_ENDPOINT`).
 - **Syslog/CEF** (v1.1): mapped subset for SIEMs without OTel ingestion.
 
@@ -765,8 +775,14 @@ JCS, drop both hash fields, and concatenate the raw previous digest.
 
 Chain head is printed at `SESSION_END` and can be anchored externally (git note,
 Vault KV, or a transparency log later). `bawbel-gate audit verify <file>` replays the
-chain. Argument payloads are hashed, not stored, by default; `--store-args` exists
-for regulated deployments with their own encryption at rest.
+chain. Argument payloads are hashed and not stored: a record holds `args_sha256` only. A
+`--store-args` option for regulated deployments with their own encryption at rest is
+specified here and not built: no such option exists.
+
+The records the gate writes are of five event types: `SESSION_START` (with
+`manifest_hashes`), `CALL_DECIDED` (the example above), `DRIFT_DETECTED` (`server`,
+`stored_hash`, `current_hash`), `SESSION_CLEAR` (the `clear` command) and `SESSION_END`.
+The other event names in the events table of section 6 are not written.
 
 ## 9. AVE records: schema 1.3.0
 

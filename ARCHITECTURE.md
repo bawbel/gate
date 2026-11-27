@@ -138,24 +138,26 @@ AVE ID ──────────────▶ bawbel-gate ─────
            map lookup                lint      (git)       pin                    AVE ID back
 ```
 
-Knowledge becomes policy mechanically: the scanner detects the class, the gate's
-mitigations map supplies the stanza for that AVE ID, the gate enforces it, and the
-denial names the record that caused it.
-Taxonomy, detection, enforcement: all three layers owned and cross-referenced.
+A published class becomes enforced policy through the gate's own mitigations map: the
+scanner detects the class, `harden --ave` takes an AVE ID and merges the stanza that the
+map holds for it, the gate enforces the merged manifest, and the denial cites the AVE ID
+back (DESIGN.md 9.1). The map is hand-reviewed, only an AVE ID with an entry in it can be
+hardened, and no AVE record is read.
+Taxonomy (AVE, a separate project), detection and enforcement are cross-referenced by AVE ID.
 
 ```mermaid
 flowchart LR
-    R["AVE record<br/>ave_id"] -->|"AVE ID"| H["bawbel-gate<br/>harden --ave"]
+    I["AVE ID<br/>given on the command line"] --> H["bawbel-gate<br/>harden --ave"]
     S["gate mitigations map<br/>keyed by AVE ID"] -->|"stanza"| H
     H -->|"merge + lint"| M["capability manifest<br/>in git, reviewed MR"]
     M -->|"load + pin"| G["gate runtime"]
     G -->|"deny / approve"| B["blocked attack<br/>-32031 cites the AVE ID"]
-    B -.->|"audit evidence"| R
 ```
 
 Status: no published AVE schema defines `capability_mitigation`, so AVE records do not
 carry mitigation stanzas. The gate keeps them in its own mitigations map: `harden --ave`
-reads `mitigations/ave-mitigations.json`, keyed by AVE ID (DESIGN.md 9.1).
+reads `mitigations/ave-mitigations.json`, keyed by AVE ID, and does not read an AVE record
+(DESIGN.md 9.1). It fails for an AVE ID that has no entry in the map.
 
 ### Flow D · Telemetry: evidence, upward
 
@@ -224,8 +226,8 @@ taint, and the rule-of-two trifecta invariant, with a hash-chained audit log,
 integrity pinning (rug-pull detection), learning mode for manifest synthesis, and an
 embedded console (v1.2).
 
-- **Consumes:** MCP traffic; manifests from git; mitigation stanzas via
-  `harden --ave`.
+- **Consumes:** MCP traffic; manifests from git; the stanzas in its own mitigations map,
+  via `harden --ave`.
 - **Produces:** allow/approve/deny decisions; audit chain; OTel spans; drift reports.
 - **Interface:** capability-manifest/v1 schema; Console API (DESIGN.md 13.1); ingest
   protocol (DESIGN.md 13.2).
@@ -459,8 +461,9 @@ framework row (DESIGN.md Appendix A: PCI DSS v4.0, ISO 27001, NIST, NBC TCRMG).
 
 - **AVE triage:** provenance vector + trifecta profile per record; the posture query
   answers "which classes apply to us" mechanically.
-- **bawbel-gate harden --ave:** a published class becomes enforced policy as a
-  reviewed diff, in minutes, with the denial citing the record back.
+- **bawbel-gate harden --ave:** for an AVE ID that has an entry in the gate's mitigations
+  map, the stanza is merged into a manifest as a reviewed diff, and the denial cites the
+  AVE ID back.
 - **drift runbook:** suspension means remote content changed after review. Read the
   semantic diff, then `verify --accept` or keep it suspended. This is the rug-pull
   control.

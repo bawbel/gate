@@ -251,11 +251,15 @@ class TestChainVerification:
         assert result2.ok is True
         assert store.record_count("gate-1", "s1") == 2  # no duplicates
 
-    def test_continuation_accepted(self):
+    def test_second_chain_under_a_held_session_id_is_refused(self):
+        """Was test_continuation_accepted, which asserted 200 here. The second chain below starts
+        from genesis and reuses session s1 and seq 1 and 2, which the Hub holds with other
+        content. That is a rewrite of held records (docs/hub/THREAT-MODEL.md, C3.2), not a
+        continuation. A real continuation is tested in test_m7_hub_ingest_hardening.py."""
         store = FleetStore(":memory:")
         r1 = _make_records("gate-1", "s1", count=2)
         process_batch("gate-1", r1, store)
-        # Build continuation starting from r1's head
+        # Build a second chain in its own log
         import tempfile, os
         with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as tf:
             path = Path(tf.name)
@@ -274,9 +278,9 @@ class TestChainVerification:
             r2 = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
         finally:
             os.unlink(path)
-        # r2 has its own chain; this is fine since it's a separate log
-        result = process_batch("gate-1", r2, store)
-        assert result.ok is True
+        with pytest.raises(ChainMismatch):
+            process_batch("gate-1", r2, store)
+        assert store.record_count("gate-1", "s1") == 2
 
 
 # ---------------------------------------------------------------------------
