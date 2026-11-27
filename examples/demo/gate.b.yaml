@@ -1,0 +1,20 @@
+# DEMO session B: the three legs of the trifecta, one stub server for each.
+schema: bawbel/gate-config/v1
+audit_log: gate.audit.jsonl
+approval:
+  channel: terminal
+  timeout_seconds: 5
+  on_timeout: deny
+servers:
+  - name: notes
+    command: python3
+    args: ["stub_server.py", "--role", "notes", "--state", "state-b.json"]
+    manifest: manifests/notes.cap.yaml
+  - name: web
+    command: python3
+    args: ["stub_server.py", "--role", "web"]
+    manifest: manifests/web.cap.yaml
+  - name: outbox
+    command: python3
+    args: ["stub_server.py", "--role", "outbox", "--sink", "sink.txt"]
+    manifest: manifests/outbox.cap.yaml

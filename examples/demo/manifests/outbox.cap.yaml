@@ -1,0 +1,16 @@
+# DEMO manifest for the outbox stub. Reviewed by hand: one tool allowed, everything else denied.
+schema: bawbel/capability-manifest/v1
+subject: {kind: mcp-server, name: demo-stub-outbox}
+provenance_class: tool.response.outbox
+instruction_authority: none
+trifecta: {private_data: false, untrusted_content: false, external_comms: true}
+grants:
+  tools:
+    - name: send_report
+      effect: allow
+    - name: "*"
+      effect: deny
+  argument_guards:
+    - applies_to: "*"
+      outbound_secret_scan: true
+      max_outbound_bytes: 4096

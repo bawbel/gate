@@ -1,0 +1,12 @@
+# DEMO manifest for the web stub. Reviewed by hand: one tool allowed, everything else denied.
+schema: bawbel/capability-manifest/v1
+subject: {kind: mcp-server, name: demo-stub-web}
+provenance_class: tool.response.web
+instruction_authority: none
+trifecta: {private_data: false, untrusted_content: true, external_comms: false}
+grants:
+  tools:
+    - name: fetch_page
+      effect: allow
+    - name: "*"
+      effect: deny

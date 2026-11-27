@@ -1,0 +1,12 @@
+# DEMO manifest for the notes stub. Reviewed by hand: one tool allowed, everything else denied.
+schema: bawbel/capability-manifest/v1
+subject: {kind: mcp-server, name: demo-stub-notes}
+provenance_class: tool.response.notes
+instruction_authority: none
+trifecta: {private_data: true, untrusted_content: false, external_comms: false}
+grants:
+  tools:
+    - name: read_notes
+      effect: allow
+    - name: "*"
+      effect: deny
