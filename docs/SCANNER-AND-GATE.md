@@ -1,9 +1,9 @@
 # How the scanner and the gate fit together
 
 `bawbel-scanner` reads files **before** anything runs and reports findings. `bawbel-gate` sits between an agent host and its
-MCP servers **while they run**, decides each tool call, and records the decision. They use the same vocabulary, the AVE
-identifiers, and they do not call each other. The scanner prints no gate recommendation, by decision: a nudge inside a
-security tool's findings would show up in its JSON and SARIF output.
+MCP servers **while they run**, decides each tool call, and records the decision. They do not call each other. The scanner
+prints no gate recommendation, by decision: a nudge inside a security tool's findings would show up in its JSON and SARIF
+output.
 
 | | bawbel-scanner | bawbel-gate |
 |---|---|---|
@@ -121,61 +121,6 @@ bawbel-gate: session end -- chain head sha256:0cdc7892ca84e7b83487a9fbadb886243a
 $ bawbel-gate audit verify gate.audit.jsonl
 ok: 4 records, chain intact
 chain verified: gate.audit.jsonl
-(exit code 0)
-```
-
-### Where they meet: AVE ids
-
-A scanner finding carries an AVE id (`AVE-2026-00007` above). The gate's `harden --ave` takes an id and merges the record's reviewed
-mitigation stanza into a manifest. Two records have a stanza today, `AVE-2026-00041` and `AVE-2026-00042`. The finding above is
-`AVE-2026-00007`, which has none, so this example uses `AVE-2026-00041` (prompt injection through MCP server-card tool descriptions). The
-command prints the diff and writes nothing. It reads `mitigations/ave-mitigations.json`, which is in a clone and not in the installed
-package, so the path is passed.
-
-```
-$ bawbel-gate harden --ave AVE-2026-00041 --manifest proxy_test.cap.yaml --mitigations ../mitigations/ave-mitigations.json
-AVE: AVE-2026-00041  review_status: reviewed
---- manifest (before AVE-2026-00041)
-+++ manifest (after harden --ave AVE-2026-00041)
-@@ -3,20 +3,27 @@
-   kind: mcp-server
-   name: files
-   transport: stdio
--
- provenance_class: tool.response.files
- instruction_authority: none
--
- trifecta:
-   private_data: true
-   untrusted_content: true
-   external_comms: true
--
- grants:
-   tools:
--    - name: get_file
--      effect: allow
--    - name: send_email
--      effect: approve
--    - name: "*"
--      effect: deny
-+  - name: get_file
-+    effect: allow
-+  - name: send_email
-+    effect: approve
-+  - name: '*'
-+    effect: deny
-+taint_rules:
-+- when:
-+    tainted_by_any:
-+    - tool.response.*
-+  then:
-+  - tools_with: external_comms
-+    effect: approve
-+integrity_watch:
-+- kind: tool_schema
-+  on_drift: suspend
-
-dry-run: pass --write to apply the merge
 (exit code 0)
 ```
 
