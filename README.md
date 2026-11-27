@@ -34,6 +34,9 @@ bawbel-gate serve --config gate.yaml                 # enforce
 `gate.yaml` and one manifest per server. [Usage](https://github.com/bawbel/gate#usage) walks through each step and lists
 what is not supported yet; [Commands](https://github.com/bawbel/gate#commands) lists every command and option.
 
+If you try it on your own setup, the [first-run report](https://github.com/bawbel/gate/issues/new?template=first-run-report.yml)
+form asks which step you reached and how long it took. Nothing is collected beyond what you type into it.
+
 ## Status: v0.1.0 feature-complete (pre-release)
 
 The enforcement core (policy engine, taint tracking, trifecta invariant, audit chain),
