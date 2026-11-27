@@ -1,0 +1,139 @@
+name: First-run report
+description: You tried bawbel-gate on your own setup. Tell us where it stopped, or that it did not.
+title: "first-run: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is for people who followed the README on their own MCP setup. A
+        report that says "it all worked" is as useful as one that says where it broke.
+
+        Nothing is collected beyond what you type here. There is no email field and
+        no telemetry. Do not paste tokens, credentials, customer data or private
+        hostnames, and redact manifests and logs before you paste them.
+
+        This is a free, open source, pre-release project and support is best effort.
+        Filing this creates no agreement and no obligation on either side.
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: Disclosure
+      options:
+        - label: I am not reporting a vulnerability here. I will follow SECURITY.md for that.
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: bawbel-gate version
+      description: Output of `bawbel-gate --version`, or the commit SHA for a source install.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows (not supported yet, see the README)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python --version`.
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      description: >-
+        The program that launches the gate, with its version if you know it, or
+        "none, I sent JSON-RPC by hand".
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options:
+        - pip install bawbel-gate (PyPI)
+        - pip install from the develop branch
+        - From a clone (pip install -e)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: step
+    attributes:
+      label: The README step where you stopped
+      description: >-
+        Pick the last step you finished, or "I got through all of them". The names are the
+        README's own headings.
+      options:
+        - Install
+        - 1. Write gate.yaml
+        - 2. Point your MCP client at the gate
+        - "3. Learn: record what the agent does"
+        - 4. Review and synthesize draft manifests
+        - 5. Lint, pin, and harden
+        - 6. Enforce
+        - 7. Audit and operate
+        - I got through all of them
+    validations:
+      required: true
+
+  - type: input
+    id: time
+    attributes:
+      label: Time taken
+      description: >-
+        About how many minutes from `pip install` to where you stopped, or to your first
+        blocked call.
+    validations:
+      required: true
+
+  - type: textarea
+    id: broke
+    attributes:
+      label: What broke
+      description: >-
+        The command, what you expected, and what happened, including any traceback or
+        error text. Write "nothing" if nothing did.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: confusing
+    attributes:
+      label: What was confusing
+      description: >-
+        Anything in the README or the output that you had to guess at, even if it
+        worked in the end.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: quote
+    attributes:
+      label: May we quote this?
+      description: >-
+        We will not name you or quote you anywhere without a yes here. You can change
+        your answer later by editing this issue or commenting.
+      options:
+        - No, do not quote this
+        - Yes, quote it without my name
+        - Yes, quote it and name me by my GitHub handle
+    validations:
+      required: true
