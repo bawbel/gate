@@ -4,6 +4,7 @@
 # Every line of output below the commands comes from a run of that command.
 #
 #   DEMO_PAUSE=2 ./demo.sh     pause 2 seconds after each caption and each command (for recording)
+#   DEMO_END_PAUSE=6           hold the last screen this long (default: the same as DEMO_PAUSE)
 #   DEMO_GATE="python3 -m ..." ./demo.sh    use another command line for the gate
 set -u
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -93,4 +94,4 @@ cat <<'TEXT'
   passes both (README, "Verifying a log you did not write").
 - Windows, or any machine other than the one this ran on.
 TEXT
-pause
+sleep "${DEMO_END_PAUSE:-$PAUSE}"

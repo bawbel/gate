@@ -17,6 +17,7 @@ output that `demo.sh` shows comes from a run of the command printed above it.
 cd examples/demo
 ./demo.sh                  # about 5 seconds
 DEMO_PAUSE=2 ./demo.sh     # a 2 second pause after each caption and each command
+DEMO_PAUSE=2 DEMO_END_PAUSE=6 ./demo.sh   # and hold the last screen for 6 seconds
 ```
 
 The script copies this directory into a temporary one and removes it at the end, so the repository stays clean and every path on
