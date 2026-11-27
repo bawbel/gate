@@ -1,0 +1,23 @@
+[
+  {
+    "name": "get_file",
+    "description": "Read a file.",
+    "inputSchema": {
+      "type": "object"
+    }
+  },
+  {
+    "name": "send_email",
+    "description": "Send an email.",
+    "inputSchema": {
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_all",
+    "description": "Delete everything.",
+    "inputSchema": {
+      "type": "object"
+    }
+  }
+]

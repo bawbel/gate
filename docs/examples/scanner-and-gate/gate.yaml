@@ -1,0 +1,12 @@
+# Used by docs/SCANNER-AND-GATE.md. Every path is relative: run the gate from the directory that holds these files.
+schema: bawbel/gate-config/v1
+audit_log: gate.audit.jsonl
+approval:
+  channel: terminal
+  timeout_seconds: 5
+  on_timeout: deny
+servers:
+  - name: files
+    command: python3
+    args: ["fake_mcp_server.py"]
+    manifest: proxy_test.cap.yaml
