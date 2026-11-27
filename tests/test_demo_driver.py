@@ -95,6 +95,18 @@ def test_describe_names_the_outcome_and_the_reason(driver):
     assert driver.describe(None) == "no answer"
 
 
+def test_a_decided_record_is_one_compact_line(driver):
+    record = {"seq": 13, "event": "CALL_DECIDED", "server": "outbox", "tool": "send_report",
+              "effect": "deny", "reason": "approval_denied",
+              "taint": ["tool.response.notes", "tool.response.web"]}
+    line = driver.format_record(record)
+    assert line.split() == ["seq", "13", "CALL_DECIDED", "outbox/send_report", "deny",
+                            "reason=approval_denied",
+                            "taint=tool.response.notes,tool.response.web"]
+    assert driver.format_record({"seq": 1, "event": "SESSION_START"}).split() == [
+        "seq", "1", "SESSION_START"]
+
+
 # ---------------------------------------------------------------------------
 # No network anywhere in the demo
 # ---------------------------------------------------------------------------
@@ -137,7 +149,10 @@ def _stub(tmp_path: Path, role: str = "notes"):
     def ask(message: dict):
         proc.stdin.write(json.dumps(message) + "\n")
         proc.stdin.flush()
-        return json.loads(proc.stdout.readline())
+        while True:  # a notification has no id: skip it and read the answer
+            reply = json.loads(proc.stdout.readline())
+            if "id" in reply:
+                return reply
 
     return proc, ask, work
 

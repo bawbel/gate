@@ -1,0 +1,37 @@
+{
+  "name": "demo-stub",
+  "note": "DEMO. The tool lists of three stub MCP servers. Fixed text, served from this file. No network.",
+  "servers": {
+    "notes": {
+      "tools": [
+        {
+          "name": "read_notes",
+          "description": "Read the user's private notes file and return its text.",
+          "inputSchema": {"type": "object", "properties": {}}
+        }
+      ]
+    },
+    "web": {
+      "tools": [
+        {
+          "name": "fetch_page",
+          "description": "Return the text of a saved page. The page is a fixed local string.",
+          "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}}}
+        }
+      ]
+    },
+    "outbox": {
+      "tools": [
+        {
+          "name": "send_report",
+          "description": "Append a report to a local file. Nothing leaves the machine.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {"body": {"type": "string"}},
+            "required": ["body"]
+          }
+        }
+      ]
+    }
+  }
+}

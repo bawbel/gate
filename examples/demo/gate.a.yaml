@@ -1,0 +1,12 @@
+# DEMO session A: one server, so the trifecta cannot be reached. Paths are relative to the working directory.
+schema: bawbel/gate-config/v1
+audit_log: gate.audit.jsonl
+approval:
+  channel: terminal
+  timeout_seconds: 5
+  on_timeout: deny
+servers:
+  - name: notes
+    command: python3
+    args: ["stub_server.py", "--role", "notes", "--state", "state.json"]
+    manifest: manifests/notes.cap.yaml
