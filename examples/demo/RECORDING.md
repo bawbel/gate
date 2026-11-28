@@ -20,12 +20,12 @@ Measured with the gate from `develop` (0.1.1) and `bawbel-scanner` 1.3.0 from Py
 
 | Run | Wall time |
 |---|---|
-| `./demo.sh` | 4.8 s |
-| `DEMO_PAUSE=1 ./demo.sh` | 37.9 s |
+| `./demo.sh` | 5.4 s |
+| `DEMO_PAUSE=1 ./demo.sh` | 40.4 s |
 
-The script waits at 33 points: 32 pauses and the end pause (counted with `bash -x ./demo.sh`, 33 `sleep` calls), so
-`DEMO_PAUSE=1` adds 33 s to the 4.8 s. With `DEMO_PAUSE=1.2 DEMO_END_PAUSE=6` the recording is **43.3 s** long, measured as the time of the
-last event in the cast. The command took 49.4 s of wall time: the last 6 seconds produce no output, so they are not an event in the
+The script waits at 35 points: 34 pauses and the end pause (counted with `bash -x ./demo.sh`, 35 `sleep` calls), so
+`DEMO_PAUSE=1` adds 35 s to the 5.4 s. With `DEMO_PAUSE=1.2 DEMO_END_PAUSE=6` the recording is **46.2 s** long, measured as the time of the
+last event in the cast. The command took 52.4 s of wall time: the last 6 seconds produce no output, so they are not an event in the
 cast, and a player stays on the final frame.
 
 ## The commands
@@ -51,7 +51,7 @@ script -qec 'stty cols 120 rows 36; PYTHONPATH=$HOME/.local/lib/python3.10/site-
   -c "env -u PYTHONPATH DEMO_PAUSE=1.2 DEMO_END_PAUSE=6 ./demo.sh" demo.cast' /dev/null
 ```
 
-`asciinema cat` was run on the result and printed 155 lines of the demo. `asciinema play` was not run, because it needs a terminal.
+`asciinema cat` was run on the result and printed 162 lines of the demo. `asciinema play` was not run, because it needs a terminal.
 
 **Two things that change the recording:**
 
@@ -65,10 +65,10 @@ script -qec 'stty cols 120 rows 36; PYTHONPATH=$HOME/.local/lib/python3.10/site-
 
 | | |
 |---|---|
-| File | `examples/demo/demo.cast`, 12,886 bytes, asciicast v2 |
-| Size and length | 120 x 36, 43.3 s, 85 events |
-| sha256 | `dd36628272c39720019af3ec35351654288baa7a363a6658bf0d16d3489b9740` |
-| Made from | `demo.sh` at `008b5bb` (pull request #268), gate `develop` at `d5c7912` (0.1.1), scanner 1.3.0 from PyPI |
+| File | `examples/demo/demo.cast`, 13,360 bytes, asciicast v2 |
+| Size and length | 120 x 36, 46.2 s, 86 events |
+| sha256 | `acd84ad43f43bbf75eba5adfe7da10a514a589f390e0575ec95ebda91b4e98c2` |
+| Made from | `demo.sh` at `0b85705` (pull request #268), gate `develop` at `d5c7912` (0.1.1), scanner 1.3.0 from PyPI |
 | Checked | no `/home/`, no `/tmp/`, no user name, no hostname, no warning line (searched in the output text of the cast). The header has only `SHELL` and `TERM` in `env` |
 
 To turn it into a GIF: `agg demo.cast demo.gif`. `agg` is not installed on the machine that prepared this, so that command has not been run.
@@ -86,3 +86,8 @@ Not added to the README. A draft to start from:
 - The recording is not at the top of the README, and no caption is committed.
 - No GIF, and no run of `asciinema play` or `agg`.
 - One machine, one run for each timing. Variance was not measured.
+
+## Checked by a test
+
+`tests/test_demo_recording.py` checks the cast: asciicast version 2, 120 by 36, a length between 30 and 60 seconds, the opening DEMO line, no local path
+or warning in the output, and that the last two screens in the cast are the ones in `demo.sh`. The last check skips when `demo.sh` is not in the checkout.
